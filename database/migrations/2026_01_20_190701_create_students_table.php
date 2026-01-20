@@ -34,7 +34,7 @@ return new class extends Migration
             
             // Media and personal details
             $table->string('profile_picture')->nullable();
-            $table->date('date_of_birth')->nullable();
+            $table->date('date_of_birth');
             
             // Verification timestamps
             $table->timestamp('email_verified_at')->nullable();
