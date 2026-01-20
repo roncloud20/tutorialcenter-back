@@ -19,8 +19,8 @@ return new class extends Migration
             $table->id();
 
             // Basic student information
-            $table->string('first_name');
-            $table->string('surname');
+            $table->string('first_name')->nullable();
+            $table->string('surname')->nullable();
             
             // Contact information (with unique constraints)
             $table->string('email')->unique();
