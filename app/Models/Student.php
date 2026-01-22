@@ -33,7 +33,7 @@ class Student extends Model
     ];
 
     protected $casts = [
-        'password' => 'hashed',
+        // 'password' => 'hashed',
         'guardians' => 'array',
         'date_of_birth' => 'date',
         'email_verified_at' => 'datetime',

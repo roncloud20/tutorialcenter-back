@@ -3,6 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+use App\Http\Controllers\StudentController;
+
+/*
+ * Public Routes
+*/
+Route::post('/students/register', [StudentController::class, 'store']);
+
