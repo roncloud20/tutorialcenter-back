@@ -16,6 +16,8 @@ return new class extends Migration {
             $table->string('code');
             $table->timestamp('expires_at');
             $table->timestamps();
+
+            $table->index(['tel', 'expires_at']);
         });
     }
 
