@@ -1,5 +1,5 @@
 @props(['url'])
-<tr>
+<!-- <tr>
 <td class="header">
 <a href="{{ config('app.frontend_url') }}" style="display: inline-block;">
     <img
@@ -10,9 +10,9 @@
     >
 </a>
 </td>
-</tr>
+</tr> -->
 
-<!-- <tr>
+<tr>
 <td class="header">
 <a href="{{ $url }}" style="display: inline-block;">
 @if (trim($slot) === 'Laravel')
@@ -22,4 +22,4 @@
 @endif
 </a>
 </td>
-</tr> -->
+</tr>
