@@ -40,6 +40,19 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'staff' => [
+            'driver' => 'sanctum', // or session
+            'provider' => 'staffs',
+        ],
+        'student' => [
+            'driver' => 'sanctum', // or session
+            'provider' => 'students',
+        ],
+        'guardian' => [
+            'driver' => 'sanctum', // or session
+            'provider' => 'guardians',
+        ],
+
     ],
 
     /*
@@ -63,6 +76,21 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'staffs' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Staff::class,
+        ],
+
+        'students' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Student::class,
+        ],
+
+        'guardians' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Guardian::class,
         ],
 
         // 'users' => [
