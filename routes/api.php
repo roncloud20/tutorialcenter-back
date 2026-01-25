@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StaffController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -8,10 +9,68 @@ use App\Http\Controllers\StudentController;
 /*
 * Public Routes
 */
-Route::post('/students/register', [StudentController::class, 'store']); // Student Registration
-Route::post('/students/verify-email', [StudentController::class, 'verifyEmail']); // Email Verification
-Route::post('/students/resend-email-verification', [StudentController::class, 'resendEmailVerification'])->middleware('throttle:3,10'); // Resend Email Verification
-Route::post('/students/verify-phone', [StudentController::class, 'verifyPhoneOtp']); // Phone OTP Verification
-Route::post('/students/resend-phone-otp', [StudentController::class, 'resendPhoneOtp'])->middleware('throttle:3,10'); // Resend Phone OTP
-Route::post('/students/biodata', [StudentController::class, 'biodata']); // Complete Biodata
+
+/** 
+ * Student Routes
+ **/
+
+/*
+|--------------------------------------------------------------------------
+| Student Registration & Verification
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('students')->group(function () {
+
+    // Registration
+    Route::post('/register', [StudentController::class, 'store']);
+
+    // Email verification
+    Route::get('/verify-email', [StudentController::class, 'verifyEmail']);
+    Route::post('/resend-email-verification', [StudentController::class, 'resendEmailVerification']);
+
+    // Phone OTP verification
+    Route::post('/verify-phone', [StudentController::class, 'verifyPhoneOtp']);
+    Route::post('/resend-phone-otp', [StudentController::class, 'resendPhoneOtp']);
+
+    // Biodata completion (NO AUTH REQUIRED, but verification enforced)
+    Route::post('/biodata', [StudentController::class, 'biodata']);
+});
+
+/** 
+ * Staff Routes
+ **/
+
+/*
+|--------------------------------------------------------------------------
+| Staff Registration & Verification
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('staffs')->group(function () {
+
+    // Registration (Admin only — enforced in controller)
+    Route::post('/register', [StaffController::class, 'store']);
+
+    // Email verification
+    Route::get('/verify-email', [StaffController::class, 'verifyEmail']);
+    Route::post('/resend-email-verification', [StaffController::class, 'resendEmailVerification']);
+
+    // Phone OTP verification
+    Route::post('/verify-phone', [StaffController::class, 'verifyPhoneOtp']);
+    Route::post('/resend-phone-otp', [StaffController::class, 'resendPhoneOtp']);
+
+    // Login (restricted until verified)
+    Route::post('/login', [StaffController::class, 'login']);
+});
+
+
+
+/*
+* Admin Only Protected Routes
+*/
+// Route::middleware(['auth:staff', 'staff.role:admin'])->group(function () {
+//     Route::post('/staff/register', [StaffController::class, 'store']); // Staff Registration
+// });
+
 

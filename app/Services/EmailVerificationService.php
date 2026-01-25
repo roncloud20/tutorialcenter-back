@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Notifications\StaffEmailVerificationNotification;
 use Illuminate\Support\Str;
 use App\Models\EmailVerification;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,12 @@ class EmailVerificationService
             'token' => $token,
             'expires_at' => now()->addMinutes(30),
         ]);
-
-        $user->notify(new StudentEmailVerification($token));
+        if(get_class($user) === 'App\Models\Student') {
+            $user->notify(new StudentEmailVerification($token));
+            return;
+        } else if(get_class($user) === 'App\Models\Staff') {
+            $user->notify(new StaffEmailVerificationNotification($token));
+            return;
+        }
     }
 }

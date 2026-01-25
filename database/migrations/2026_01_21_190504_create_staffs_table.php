@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('staff_id')->unique()->comment('FORMAT(TCYYMM0000) The format is designed like TY26012453');
             $table->string('firstname');
-            $table->string('middlename');
+            $table->string('middlename')->nullable();
             $table->string('surname');
             $table->string('email')->unique();
             $table->string('tel')->unique();
