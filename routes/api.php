@@ -1,19 +1,12 @@
 <?php
 
+use App\Http\Controllers\CourseController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\StudentController;
-
-/*
-* Public Routes
-*/
-
-/** 
- * Student Routes
- **/
 
 /*
 |--------------------------------------------------------------------------
@@ -38,10 +31,6 @@ Route::prefix('students')->group(function () {
     Route::post('/biodata', [StudentController::class, 'biodata']);
 });
 
-/** 
- * Staff Routes
- **/
-
 /*
 |--------------------------------------------------------------------------
 | Staff Registration & Verification
@@ -63,11 +52,13 @@ Route::prefix('staffs')->group(function () {
 
     // Login (restricted until verified)
     Route::post('/login', [StaffController::class, 'login']);
-});
 
-/** 
- * Guardian Routes
- **/
+    Route::middleware('auth:staff')->group(function () {
+        // Logout
+        Route::post('/logout', [StaffController::class, 'logout']);
+    });
+
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -85,14 +76,15 @@ Route::prefix('guardians')->group(function () {
     Route::post('/resend-email', [GuardianController::class, 'resendEmailVerification']);
 });
 
-
-
-
 /*
 * Admin Only Protected Routes
 */
-// Route::middleware(['auth:staff', 'staff.role:admin'])->group(function () {
-//     Route::post('/staff/register', [StaffController::class, 'store']); // Staff Registration
-// });
+Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:admin'])->group(function () {
+    // Course Management
+    Route::post('/courses', [CourseController::class, 'store']);
+    Route::put('/courses/update/{id}', [CourseController::class, 'update']);
+    Route::delete('/courses/destroy/{id}', [CourseController::class, 'destroy']);
+    Route::post('/courses/restore/{id}', [CourseController::class, 'restore']);
+});
 
 

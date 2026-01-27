@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Services\EmailVerificationService;
+use Illuminate\Validation\ValidationException;
 
 class StaffController extends Controller
 {
@@ -305,19 +306,19 @@ class StaffController extends Controller
     public function resendPhoneOtp(Request $request)
     {
         try {
-        $request->validate([
-            'tel' => 'required|string|exists:staffs,tel',
-        ]);
+            $request->validate([
+                'tel' => 'required|string|exists:staffs,tel',
+            ]);
 
-        $staff = Staff::where('tel', $request->tel)->first();
+            $staff = Staff::where('tel', $request->tel)->first();
 
-        if ($staff->tel_verified_at) {
-            return response()->json([
-                'message' => 'Phone already verified.',
-            ], 400);
-        }
+            if ($staff->tel_verified_at) {
+                return response()->json([
+                    'message' => 'Phone already verified.',
+                ], 400);
+            }
 
-        // try {
+            // try {
             DB::beginTransaction();
 
             $this->sendPhoneOtp($staff->tel);
@@ -336,5 +337,71 @@ class StaffController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    /**
+     * Staff login.
+     */
+    public function login(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
+
+            $staff = Staff::where('email', $request->email)->first();
+
+            if (!$staff || !Hash::check($request->password, $staff->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid login credentials.'],
+                ]);
+            }
+
+            // 🔒 Email verification check
+            if (!$staff->email_verified_at) {
+                return response()->json([
+                    'message' => 'Please verify your email before logging in.',
+                ], 403);
+            }
+
+            // 🔒 Phone verification check
+            if (!$staff->tel_verified_at) {
+                return response()->json([
+                    'message' => 'Please verify your phone number before logging in.',
+                ], 403);
+            }
+
+            // Generate token
+            $token = $staff->createToken('staff-token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful.',
+                'token' => $token,
+                'staff' => [
+                    'id' => $staff->id,
+                    'fullname' => trim("{$staff->firstname} {$staff->middlename} {$staff->surname}"),
+                    'email' => $staff->email,
+                    'role' => $staff->role,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Login failed.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Staff logout.
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()?->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully.',
+        ]);
     }
 }

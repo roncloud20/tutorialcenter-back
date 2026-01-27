@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Guardian extends Model
 {
-    use SoftDeletes, Notifiable;
+    use SoftDeletes, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'firstname',

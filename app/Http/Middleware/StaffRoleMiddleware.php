@@ -27,7 +27,7 @@ class StaffRoleMiddleware
 
         if (!in_array($staff->role, $roles)) {
             return response()->json([
-                'message' => 'Access denied. Insufficient permissions.',
+                'message' => 'Access denied. Unauthorized Personal.',
             ], 403);
         }
 
