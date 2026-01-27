@@ -2,17 +2,20 @@
 
 namespace App\Services;
 
-use App\Notifications\StaffEmailVerificationNotification;
+use App\Models\Staff;
+use App\Models\Student;
+use App\Models\Guardian;
 use Illuminate\Support\Str;
 use App\Models\EmailVerification;
 use Illuminate\Database\Eloquent\Model;
 use App\Notifications\StudentEmailVerification;
+use App\Notifications\StaffEmailVerificationNotification;
+use App\Notifications\GuardianEmailVerificationNotification;
 
 class EmailVerificationService
 {
     public function send(Model $user): void
     {
-        // Remove existing tokens
         EmailVerification::where('verifiable_type', get_class($user))
             ->where('verifiable_id', $user->id)
             ->delete();
@@ -25,11 +28,19 @@ class EmailVerificationService
             'token' => $token,
             'expires_at' => now()->addMinutes(30),
         ]);
-        if(get_class($user) === 'App\Models\Student') {
+
+        if ($user instanceof Student) {
             $user->notify(new StudentEmailVerification($token));
             return;
-        } else if(get_class($user) === 'App\Models\Staff') {
+        }
+
+        if ($user instanceof Staff) {
             $user->notify(new StaffEmailVerificationNotification($token));
+            return;
+        }
+
+        if ($user instanceof Guardian) {
+            $user->notify(new GuardianEmailVerificationNotification($token));
             return;
         }
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,27 @@ Route::prefix('staffs')->group(function () {
     // Login (restricted until verified)
     Route::post('/login', [StaffController::class, 'login']);
 });
+
+/** 
+ * Guardian Routes
+ **/
+
+/*
+|--------------------------------------------------------------------------
+| Guardian Registration & Verification
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('guardians')->group(function () {
+    Route::post('/register', [GuardianController::class, 'store']);
+    Route::post('/verify-email', [GuardianController::class, 'verifyEmail']);
+
+    Route::post('/verify-phone', [GuardianController::class, 'verifyPhoneOtp']);
+    Route::post('/resend-phone-otp', [GuardianController::class, 'resendPhoneOtp']);
+
+    Route::post('/resend-email', [GuardianController::class, 'resendEmailVerification']);
+});
+
 
 
 
