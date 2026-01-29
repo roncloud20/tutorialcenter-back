@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Student;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\CoursesEnrollment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+
 
 class CourseController extends Controller
 {
@@ -201,7 +204,7 @@ class CourseController extends Controller
     }
 
     /**
-     * STUDENT: Fetch active courses
+     * Public: Fetch active courses
      */
     public function index()
     {
@@ -217,5 +220,105 @@ class CourseController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * STUDENT: Enroll in a course
+     */
+    public function courseEnroll(Request $request)
+    {
+        // 1. Validate request
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|exists:students,id',
+            'course_id' => 'required|exists:courses,id',
+            'billing_cycle' => 'required|in:monthly,quarterly,semi-annual,annual',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // 2. Fetch student
+            $student = Student::find($request->student_id);
+
+            // 3. Ensure student is verified
+            if (is_null($student->email_verified_at) || is_null($student->tel_verified_at)) {
+                return response()->json([
+                    'message' => 'Please verify your email or phone number before enrolling.',
+                ], 403);
+            }
+
+            // 4. Fetch active course
+            $course = Course::where('id', $request->course_id)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$course) {
+                return response()->json([
+                    'message' => 'Course is not available for enrollment.',
+                ], 404);
+            }
+
+            // 5. Prevent duplicate enrollment
+            $alreadyEnrolled = CoursesEnrollment::where('course', $course->id)
+                ->where('student', $student->id)
+                ->exists();
+
+            if ($alreadyEnrolled) {
+                return response()->json([
+                    'message' => 'You are already enrolled in this course.',
+                ], 409);
+            }
+
+            // 6. Billing logic
+            $startDate = now();
+
+            $endDate = match ($request->billing_cycle) {
+                'monthly' => now()->addMonth(),
+                'quarterly' => now()->addMonths(3),
+                'semi-annual' => now()->addMonths(6),
+                'annual' => now()->addYear(),
+            };
+
+            $cost = $course->price; // monthly base price
+            if ($request->billing_cycle === 'quarterly') {
+                $cost = ($cost * 3) / 0.95; // 5% discount
+            } elseif ($request->billing_cycle === 'semi-annual') {
+                $cost = ($cost * 6) / 0.95; // 5% discount
+            } elseif ($request->billing_cycle === 'annual') {
+                $cost = ($cost * 12) / 0.95; // 5% discount
+            }
+
+            // 7. Create enrollment
+            $enrollment = CoursesEnrollment::create([
+                'course' => $course->id,
+                'student' => $student->id,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'billing_cycle' => $request->billing_cycle,
+                'cost' => $cost,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Enrollment successful.',
+                'enrollment' => $enrollment,
+            ], 201);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Enrollment failed.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
 
 }

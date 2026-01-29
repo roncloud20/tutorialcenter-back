@@ -15,6 +15,8 @@ use App\Http\Controllers\StudentController;
 */
 Route::get('/courses', [CourseController::class, 'index']);
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Student Public Routes
@@ -35,6 +37,9 @@ Route::prefix('students')->group(function () {
 
     // Biodata completion (NO AUTH REQUIRED, but verification enforced)
     Route::post('/biodata', [StudentController::class, 'biodata']);
+
+    // Course enrollment
+    Route::post('/enroll-course', [CourseController::class, 'courseEnroll']);
 });
 
 /*

@@ -9,7 +9,7 @@ class CoursesEnrollment extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'courses_enrollments';
+    // protected $table = 'courses_enrollments';
 
     protected $fillable = [
         'course',
@@ -35,4 +35,10 @@ class CoursesEnrollment extends Model
     {
         return $this->belongsTo(Student::class, 'student');
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'course_enrollment_id');
+    }
+
 }
