@@ -10,10 +10,16 @@ use App\Http\Controllers\StudentController;
 
 /*
 |--------------------------------------------------------------------------
-| Student Registration & Verification
+| API Routes
 |--------------------------------------------------------------------------
 */
+Route::get('/courses', [CourseController::class, 'index']);
 
+/*
+|--------------------------------------------------------------------------
+| Student Public Routes
+|--------------------------------------------------------------------------
+*/
 Route::prefix('students')->group(function () {
 
     // Registration
@@ -29,6 +35,15 @@ Route::prefix('students')->group(function () {
 
     // Biodata completion (NO AUTH REQUIRED, but verification enforced)
     Route::post('/biodata', [StudentController::class, 'biodata']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Student Protected Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(function () {
+    // Route::get('/courses', [StudentController::class, 'fetchCourses']);
 });
 
 /*
@@ -87,11 +102,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
     Route::post('/courses/restore/{id}', [CourseController::class, 'restore']);
 });
 
-/*
-| Protected Student Routes
-*/
-Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(function () {
-    Route::get('/courses', [StudentController::class, 'fetchCourses']);
-});
+
 
 

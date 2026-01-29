@@ -18,11 +18,11 @@ class CourseController extends Controller
     {
         // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'title'       => 'required|string|max:255|unique:courses,title',
+            'title' => 'required|string|max:255|unique:courses,title',
             'description' => 'required|string',
-            'banner'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'status'      => 'required|in:active,inactive',
-            'price'       => 'required|numeric|min:0',
+            'banner' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'status' => 'required|in:active,inactive',
+            'price' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -47,19 +47,19 @@ class CourseController extends Controller
 
             // 4. Create course
             $course = Course::create([
-                'title'       => $request->title,
-                'slug'        => $slug,
+                'title' => $request->title,
+                'slug' => $slug,
                 'description' => $request->description,
-                'banner'      => $bannerPath,
-                'status'      => $request->status,
-                'price'       => $request->price,
+                'banner' => $bannerPath,
+                'status' => $request->status,
+                'price' => $request->price,
             ]);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Course created successfully.',
-                'course'  => $course,
+                'course' => $course,
             ], 201);
 
         } catch (\Throwable $e) {
@@ -67,7 +67,7 @@ class CourseController extends Controller
 
             return response()->json([
                 'message' => 'Course creation failed.',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -87,11 +87,11 @@ class CourseController extends Controller
 
         // 1. Validate input
         $validator = Validator::make($request->all(), [
-            'title'       => 'nullable|string|max:255|unique:courses,title,' . $course->id,
+            'title' => 'nullable|string|max:255|unique:courses,title,' . $course->id,
             'description' => 'nullable|string',
-            'banner'      => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'status'      => 'nullable|in:active,inactive',
-            'price'       => 'nullable|numeric|min:0',
+            'banner' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'status' => 'nullable|in:active,inactive',
+            'price' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -129,7 +129,7 @@ class CourseController extends Controller
 
             return response()->json([
                 'message' => 'Course updated successfully.',
-                'course'  => $course->fresh(),
+                'course' => $course->fresh(),
             ]);
 
         } catch (\Throwable $e) {
@@ -137,7 +137,7 @@ class CourseController extends Controller
 
             return response()->json([
                 'message' => 'Course update failed.',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -165,7 +165,7 @@ class CourseController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Failed to delete course.',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -173,32 +173,49 @@ class CourseController extends Controller
     /**
      * ADMIN: Restore soft-deleted course
      */
+    public function restore(int $id): JsonResponse
+    {
+        // Only admins should reach here (middleware or policy)
+        $course = Course::onlyTrashed()->find($id);
 
-public function restore(int $id): JsonResponse
-{
-    // Only admins should reach here (middleware or policy)
-    $course = Course::onlyTrashed()->find($id);
+        if (!$course) {
+            return response()->json([
+                'message' => 'Course not found or not deleted.',
+            ], 404);
+        }
 
-    if (!$course) {
-        return response()->json([
-            'message' => 'Course not found or not deleted.',
-        ], 404);
+        try {
+            $course->restore();
+
+            return response()->json([
+                'message' => 'Course restored successfully.',
+                'course' => $course,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Course restoration failed.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
-    try {
-        $course->restore();
-
-        return response()->json([
-            'message' => 'Course restored successfully.',
-            'course'  => $course,
-        ], 200);
-
-    } catch (\Throwable $e) {
-        return response()->json([
-            'message' => 'Course restoration failed.',
-            'error'   => config('app.debug') ? $e->getMessage() : null,
-        ], 500);
+    /**
+     * STUDENT: Fetch active courses
+     */
+    public function index()
+    {
+        try {
+            $courses = Course::where('status', 'active')->get();
+            return response()->json([
+                'courses' => $courses,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to fetch courses.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
-}
 
 }

@@ -491,13 +491,4 @@ class StudentController extends Controller
             ], 500);
         }
     }
-
-    public function fetchCourses()
-    {
-        $courses = Course::where('status', 'active')->get();
-
-        return response()->json([
-            'courses' => $courses,
-        ]);
-    }
 }
