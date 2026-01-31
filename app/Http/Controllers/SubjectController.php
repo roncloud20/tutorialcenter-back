@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subject;
+use App\Models\SubjectsEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -247,6 +248,54 @@ class SubjectController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Failed to retrieve subjects.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /*
+     * Public Method: Subject enrollment
+     */
+
+    public function subjectEnroll(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'course_enrollment_id' => 'required|exists:courses_enrollments,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'student_id' => 'required|exists:students,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Verify subject enrollment exists already for that course and that student
+            $existingEnrollment = SubjectsEnrollment::where('course_enrollment_id', $request->course_enrollment_id)
+                ->where('subject_id', $request->subject_id)
+                ->where('student_id', $request->student_id)
+                ->first();  
+            if ($existingEnrollment) {
+                return response()->json([
+                    'message' => 'Subject already enrolled for this course and student.',
+                ], 409);
+            }
+
+           // Create subject enrollment
+           SubjectsEnrollment::create([
+                'course_enrollment_id' => $request->course_enrollment_id,
+                'subject_id' => $request->subject_id,
+                'student_id' => $request->student_id,
+            ]);
+
+            return response()->json([
+                'message' => 'Subject enrolled successfully.',
+            ], 201);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to enroll subject.',
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }

@@ -16,8 +16,9 @@ use App\Http\Controllers\StudentController;
 */
 Route::get('/courses', [CourseController::class, 'index']); // Public: List all active courses
 Route::get('/subjects', [SubjectController::class, 'index']); // Public: List all active subjects
+Route::post('/course/enrollment', [CourseController::class, 'courseEnroll']); // Public: Enroll in a course
+Route::post('/subject/enrollment', [SubjectController::class, 'subjectEnroll']); // Public: Enroll in a subject
 Route::get('/courses/{courseId}/subjects', [SubjectController::class, 'subjectsByCourse']); // Public: List subjects by course
-
 Route::get('/courses/{courseId}/subjects/{department}',[SubjectController::class, 'subjectsByCourseAndDepartment']); // Public: List subjects by course and department
 
 
