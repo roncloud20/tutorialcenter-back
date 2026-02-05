@@ -37,7 +37,17 @@ class StudentController extends Controller
                 'required',
                 'string',
                 'min:8',
-                'confirmed',
+                'same:confirmPassword',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&]/',
+            ],
+            'confirmPassword' => [
+                'required',
+                'string',
+                'min:8',
+                'same:password',
                 'regex:/[a-z]/',
                 'regex:/[A-Z]/',
                 'regex:/[0-9]/',
@@ -48,6 +58,7 @@ class StudentController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors(),
+                'message' => 'Registration failed.',
             ], 422);
         }
 
@@ -85,7 +96,8 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Registration failed. Verification could not be sent.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
+                // 'error' => config('app.debug') ? $e->getMessage() : null,
+                'errors' => $e->getMessage(),
             ], 500);
         }
     }

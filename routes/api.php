@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\GuardianController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SubjectController;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ Route::post('/course/enrollment', [CourseController::class, 'courseEnroll']); //
 Route::post('/subject/enrollment', [SubjectController::class, 'subjectEnroll']); // Public: Enroll in a subject
 Route::get('/courses/{courseId}/subjects', [SubjectController::class, 'subjectsByCourse']); // Public: List subjects by course
 Route::get('/courses/{courseId}/subjects/{department}',[SubjectController::class, 'subjectsByCourseAndDepartment']); // Public: List subjects by course and department
-
+Route::post('payments', [PaymentController::class, 'store']); // Public: Process payment
 
 /*
 |--------------------------------------------------------------------------
