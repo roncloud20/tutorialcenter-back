@@ -32,20 +32,19 @@ Route::prefix('students')->group(function () {
 
     // Registration
     Route::post('/register', [StudentController::class, 'store']);
-
     // Email verification
     Route::post('/verify-email', [StudentController::class, 'verifyEmail']);
     Route::post('/resend-email-verification', [StudentController::class, 'resendEmailVerification']);
-
     // Phone OTP verification
     Route::post('/verify-phone', [StudentController::class, 'verifyPhoneOtp']);
     Route::post('/resend-phone-otp', [StudentController::class, 'resendPhoneOtp']);
-
     // Biodata completion (NO AUTH REQUIRED, but verification enforced)
     Route::post('/biodata', [StudentController::class, 'biodata']);
-
     // Course enrollment
     Route::post('/enroll-course', [CourseController::class, 'courseEnroll']);
+    // Login Method
+    Route::post('/login', [StudentController::class, 'login']);
+
 });
 
 /*

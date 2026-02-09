@@ -385,7 +385,8 @@ class StudentController extends Controller
     /**
      * Summary of completeBiodata
      **/
-    public function biodata(Request $request){
+    public function biodata(Request $request)
+    {
         // 1. Validate input
         $validator = Validator::make($request->all(), [
             'firstname' => 'required|string|max:50',
@@ -508,4 +509,83 @@ class StudentController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Login
+     */
+
+
+    public function login(Request $request)
+    {
+        // 1️⃣ Validate input
+        $validator = Validator::make($request->all(), [
+            'entry' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Login Fails',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        try {
+
+
+            //  Fetch student
+            $student = Student::where('email', $request->entry)->orWhere('tel', $request->entry)->first();
+
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Login Fails',
+                    'errors' => 'Student not found, please register ' . $request->entry,
+                ], 403);
+            }
+
+            // Check password
+            if (!Hash::check($request->password, $student->password)) {
+                return response()->json([
+                    'message' => 'Login Fails',
+                    'errors' => 'Invalid Login Credentials',
+                ], 403);
+            }
+
+            // Restrict login if email not verified
+            if (is_null($student->email_verified_at) && is_null($student->tel_verified_at)) {
+                return response()->json([
+                    'message' => 'Please verify your email address before logging in.',
+                    'verification_required' => 'email',
+                ], 403);
+            }
+
+            // Create Sanctum token
+            $token = $student->createToken('student-token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful.',
+                'token' => $token,
+                'student' => $student
+            ],200);
+
+        } catch (\Exception $error) {
+            return response()->json([
+                'message' => 'Login Fails',
+                'errors' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * logout.
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()?->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully.',
+        ]);
+    }
+
 }
