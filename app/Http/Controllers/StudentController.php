@@ -385,8 +385,7 @@ class StudentController extends Controller
     /**
      * Summary of completeBiodata
      **/
-    public function biodata(Request $request)
-    {
+    public function biodata(Request $request){
         // 1. Validate input
         $validator = Validator::make($request->all(), [
             'firstname' => 'required|string|max:50',
