@@ -12,15 +12,10 @@ class Classes extends Model
     protected $table = 'classes';
 
     protected $fillable = [
-        'subject',
+        'subject_id',
         'title',
         'description',
-        'staffs',
         'status',
-    ];
-
-    protected $casts = [
-        'staffs' => 'array',
     ];
 
         public function staffs()

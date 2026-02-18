@@ -9,7 +9,7 @@ class ClassStaff extends Pivot
     protected $table = 'class_staff';
 
     protected $fillable = [
-        'class_room_id',
+        'class_id',
         'staff_id',
         'role'
     ];
