@@ -1,14 +1,13 @@
 <?php
 
-use App\Http\Controllers\CourseController;
-use App\Http\Controllers\GuardianController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\SubjectController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\ClassesController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\GuardianController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,7 +19,7 @@ Route::get('/subjects', [SubjectController::class, 'index']); // Public: List al
 Route::post('/course/enrollment', [CourseController::class, 'courseEnroll']); // Public: Enroll in a course
 Route::post('/subject/enrollment', [SubjectController::class, 'subjectEnroll']); // Public: Enroll in a subject
 Route::get('/courses/{courseId}/subjects', [SubjectController::class, 'subjectsByCourse']); // Public: List subjects by course
-Route::get('/courses/{courseId}/subjects/{department}',[SubjectController::class, 'subjectsByCourseAndDepartment']); // Public: List subjects by course and department
+Route::get('/courses/{courseId}/subjects/{department}', [SubjectController::class, 'subjectsByCourseAndDepartment']); // Public: List subjects by course and department
 Route::post('payments', [PaymentController::class, 'store']); // Public: Process payment
 
 /*
@@ -93,8 +92,8 @@ Route::prefix('guardians')->group(function () {
 });
 
 /*
-* Admin Only Protected Routes
-*/
+ * Admin Only Protected Routes
+ */
 Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:admin'])->group(function () {
     // Course Management
     Route::post('/courses', [CourseController::class, 'store']);
@@ -108,6 +107,42 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
     Route::put('/subjects/update/{id}', [SubjectController::class, 'update']); // Update subject
     Route::delete('/subjects/destroy/{id}', [SubjectController::class, 'destroy']); // Soft delete subject
     Route::post('/subjects/restore/{id}', [SubjectController::class, 'restore']); // Restore soft-deleted subject
+
+    // Classes Management
+    Route::prefix('classes')->group(function () {
+
+        // Get all classes
+        Route::get('/', [ClassesController::class, 'index']);
+
+        // Create class
+        Route::post('/', [ClassesController::class, 'store']);
+
+        // Get single class
+        Route::get('/{id}', [ClassesController::class, 'show']);
+
+        // Update class
+        Route::put('/{id}', [ClassesController::class, 'update']);
+        Route::patch('/{id}', [ClassesController::class, 'update']);
+
+        // Soft delete
+        Route::delete('/{id}', [ClassesController::class, 'destroy']);
+
+        // Restore soft deleted class
+        Route::post('/{id}/restore', [ClassesController::class, 'restore']);
+
+        // Permanently delete
+        Route::delete('/{id}/force-delete', [ClassesController::class, 'forceDelete']);
+
+        // Update status
+        Route::patch('/{id}/status', [ClassesController::class, 'updateStatus']);
+
+        // Attach staff
+        Route::post('/{id}/staff', [ClassesController::class, 'attachStaff']);
+
+        // Detach staff
+        Route::delete('/{classId}/staff/{staffId}', [ClassesController::class, 'detachStaff']);
+    });
+
 });
 
 

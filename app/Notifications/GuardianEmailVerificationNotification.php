@@ -19,7 +19,7 @@ class GuardianEmailVerificationNotification extends Notification
 
     public function toMail($notifiable)
     {
-        $verifyUrl = config('app.frontend_url') . '/verify-email?token=' . $this->token;
+        $verifyUrl = config('app.frontend_url') . '/register/guardian/email/verify?token=' . $this->token . '&email=' . urlencode($notifiable->email);
 
         return (new MailMessage)
             ->subject('Verify Your Guardian Account')
