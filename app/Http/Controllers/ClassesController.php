@@ -7,6 +7,7 @@ use App\Models\ClassSchedule;
 use App\Models\ClassStaff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Validator;
 
 class ClassesController extends Controller
 {
@@ -34,7 +35,7 @@ class ClassesController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'subject_id' => 'required|exists:subjects,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -48,21 +49,28 @@ class ClassesController extends Controller
             'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         DB::beginTransaction();
 
         try {
 
             $class = Classes::create([
-                'subject_id' => $validated['subject_id'],
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-                'status' => $validated['status'],
+                'subject_id' => $request->subject_id,
+                'title' => $request->title,
+                'description' => $request->description ?? null,
+                'status' => $request->status,
             ]);
 
             // Attach Staffs
-            if (!empty($validated['staffs'])) {
+            if (!empty($request->staffs)) {
                 $staffData = [];
-                foreach ($validated['staffs'] as $staff) {
+                foreach ($request->staffs as $staff) {
                     $staffData[$staff['staff_id']] = [
                         'role' => $staff['role'] ?? null
                     ];
@@ -71,8 +79,8 @@ class ClassesController extends Controller
             }
 
             // Create schedules
-            if (!empty($validated['schedules'])) {
-                foreach ($validated['schedules'] as $schedule) {
+            if (!empty($request->schedules)) {
+                foreach ($request->schedules as $schedule) {
                     ClassSchedule::create([
                         'class_id' => $class->id,
                         'day_of_week' => $schedule['day_of_week'],
