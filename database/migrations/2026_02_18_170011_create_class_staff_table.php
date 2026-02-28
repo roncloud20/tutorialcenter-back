@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,22 +12,25 @@ return new class extends Migration {
         Schema::create('class_staff', function (Blueprint $table) {
             $table->id();
 
+            // Foreign Keys
             $table->foreignId('class_id')
-                ->constrained('classes')
-                ->cascadeOnDelete();
+                  ->constrained('classes')
+                  ->cascadeOnDelete();
 
             $table->foreignId('staff_id')
-                ->constrained('staffs')
-                ->cascadeOnDelete();
+                  ->constrained('staffs')
+                  ->cascadeOnDelete();
 
+            // Role in class
             $table->enum('role', ['lead', 'assistant'])
-                ->default('lead');
+                  ->default('lead');
 
+            // Timestamps
             $table->timestamps();
 
-            $table->unique(['class_id', 'staff_id']);
+            // Prevent duplicate assignment
+            $table->unique(['class_id', 'staff_id'], 'class_staff_unique');
         });
-
     }
 
     /**
@@ -39,3 +41,48 @@ return new class extends Migration {
         Schema::dropIfExists('class_staff');
     }
 };
+
+
+
+
+
+
+// use Illuminate\Database\Migrations\Migration;
+// use Illuminate\Database\Schema\Blueprint;
+// use Illuminate\Support\Facades\Schema;
+
+// return new class extends Migration {
+//     /**
+//      * Run the migrations.
+//      */
+//     public function up(): void
+//     {
+//         Schema::create('class_staff', function (Blueprint $table) {
+//             $table->id();
+
+//             $table->foreignId('class_id')
+//                 ->constrained('classes')
+//                 ->cascadeOnDelete();
+
+//             $table->foreignId('staff_id')
+//                 ->constrained('staffs')
+//                 ->cascadeOnDelete();
+
+//             $table->enum('role', ['lead', 'assistant'])
+//                 ->default('lead');
+
+//             $table->timestamps();
+
+//             $table->unique(['class_id', 'staff_id']);
+//         });
+
+//     }
+
+//     /**
+//      * Reverse the migrations.
+//      */
+//     public function down(): void
+//     {
+//         Schema::dropIfExists('class_staff');
+//     }
+// };
