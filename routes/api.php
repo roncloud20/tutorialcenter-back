@@ -46,6 +46,7 @@ Route::prefix('students')->group(function () {
 Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(function () {
     Route::get('/courses', [CourseController::class, 'getActiveCourses']); // Get Active Courses and Subject 
     Route::get('/payments', [PaymentController::class, 'myPayments']); // Listing out all payments
+    Route::get('/schedule', [ClassesController::class, 'studentSchedule']); // Get student schedule (classes and sessions)
 });
 
 /*

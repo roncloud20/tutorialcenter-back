@@ -21,8 +21,12 @@ class ClassSchedule extends Model
         'end_time' => 'datetime:H:i',
     ];
 
+    // public function sessions()
+    // {
+    //     return $this->hasMany(ClassSession::class, 'class_schedule');
+    // }
     public function sessions()
     {
-        return $this->hasMany(ClassSession::class, 'class_schedule');
+        return $this->hasMany(ClassSession::class, 'class_schedule_id');
     }
 }

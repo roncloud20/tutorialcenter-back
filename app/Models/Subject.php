@@ -25,8 +25,13 @@ class Subject extends Model
         'assignees' => 'array',
     ];
 
+    // public function classes()
+    // {
+    //     return $this->hasMany(Classes::class, 'subject');
+    // }
+
     public function classes()
     {
-        return $this->hasMany(Classes::class, 'subject');
+        return $this->hasMany(Classes::class, 'subject_id');
     }
 }

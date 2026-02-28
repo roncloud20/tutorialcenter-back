@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Validator;
 use App\Models\Classes;
-use App\Models\ClassSchedule;
 use App\Models\ClassStaff;
 use Illuminate\Http\Request;
+use App\Models\ClassSchedule;
+use Illuminate\Support\Carbon;
+use App\Models\SubjectsEnrollment;
 use Illuminate\Support\Facades\DB;
-use Validator;
 
 class ClassesController extends Controller
 {
@@ -284,6 +286,94 @@ class ClassesController extends Controller
 
         return response()->json([
             'message' => 'Staff detached successfully'
+        ]);
+    }
+
+    /**
+     * Get student schedule (enrolled classes + sessions)
+     */
+    public function studentSchedule(Request $request)
+    {
+        $studentId = $request->user()->id; // assuming auth student
+
+        // 1️⃣ Get enrolled subjects
+        $subjectEnrollments = SubjectsEnrollment::with([
+            'subject.classes.staffs',
+            'subject.classes.schedules.sessions' => function ($query) {
+                $query->whereDate('session_date', '>=', now())
+                    ->orderBy('session_date')
+                    ->orderBy('starts_at');
+            }
+        ])
+            ->where('student', $studentId)
+            ->get();
+
+        // 2️⃣ Format response
+        $data = $subjectEnrollments->map(function ($enrollment) {
+
+            $subject = $enrollment->subject;
+
+            if (!$subject) {
+                return null;
+            }
+
+            return [
+                'subject' => $subject->name,
+
+                'classes' => $subject->classes?->map(function ($class) {
+
+                    return [
+                        'class_id' => $class->id,
+                        'title' => $class->title,
+                        'description' => $class->description,
+                        'status' => $class->status,
+                    ];
+
+                }) ?? []
+            ];
+        })->filter()->values();
+        // $data = $subjectEnrollments->map(function ($enrollment) {
+
+        //     return [
+        //         'subject' => $enrollment->subject->name ?? null,
+
+        //         'classes' => $enrollment->subject->classes->map(function ($class) {
+
+        //             return [
+        //                 'class_id' => $class->id,
+        //                 'title' => $class->title,
+        //                 'description' => $class->description,
+        //                 'status' => $class->status,
+
+        //                 'tutors' => $class->staffs->map(function ($staff) {
+        //                     return [
+        //                         'id' => $staff->id,
+        //                         'name' => $staff->name,
+        //                         'role' => $staff->pivot->role,
+        //                     ];
+        //                 }),
+
+        //                 'weekly_schedule' => $class->schedules->map(function ($schedule) {
+        //                     return [
+        //                         'day_of_week' => $schedule->day_of_week,
+        //                         'start_time' => $schedule->start_time,
+        //                         'end_time' => $schedule->end_time,
+        //                     ];
+        //                 }),
+
+        //                 'upcoming_sessions' => $class->schedules
+        //                     ->flatMap(function ($schedule) {
+        //                         return $schedule->sessions;
+        //                     })
+        //                     ->values()
+        //             ];
+        //         })
+        //     ];
+        // });
+
+        return response()->json([
+            'status' => true,
+            'data' => $data
         ]);
     }
 }
