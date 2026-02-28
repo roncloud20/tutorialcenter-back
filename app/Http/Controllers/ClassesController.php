@@ -21,11 +21,11 @@ class ClassesController extends Controller
             'schedules',
             'sessions'
         ])
-        ->when($request->status, function ($query) use ($request) {
-            $query->where('status', $request->status);
-        })
-        ->latest()
-        ->paginate(10);
+            ->when($request->status, function ($query) use ($request) {
+                $query->where('status', $request->status);
+            })
+            ->latest()
+            ->paginate(10);
 
         return response()->json($classes);
     }
@@ -40,18 +40,20 @@ class ClassesController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
+
             'staffs' => 'nullable|array',
-            'staffs.*.staff_id' => 'required|exists:staff,id',
+            'staffs.*.staff_id' => 'required|exists:staffs,id',
             'staffs.*.role' => 'nullable|string|max:255',
+
             'schedules' => 'nullable|array',
             'schedules.*.day_of_week' => 'required|in:sunday,monday,tuesday,wednesday,thursday,friday,saturday',
             'schedules.*.start_time' => 'required|date_format:H:i',
-            'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
+            'schedules.*.end_time' => 'required|date_format:H:i',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => 'Class Verification Failed',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -60,6 +62,11 @@ class ClassesController extends Controller
 
         try {
 
+            /*
+            |--------------------------------------------------------------------------
+            | 1. Create Class
+            |--------------------------------------------------------------------------
+            */
             $class = Classes::create([
                 'subject_id' => $request->subject_id,
                 'title' => $request->title,
@@ -67,21 +74,36 @@ class ClassesController extends Controller
                 'status' => $request->status,
             ]);
 
-            // Attach Staffs
-            if (!empty($request->staffs)) {
-                $staffData = [];
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Attach Staff (Pivot: class_staff)
+            |--------------------------------------------------------------------------
+            */
+            if ($request->filled('staffs')) {
+
+                $staffAttachData = [];
+
                 foreach ($request->staffs as $staff) {
-                    $staffData[$staff['staff_id']] = [
+
+                    $staffAttachData[$staff['staff_id']] = [
                         'role' => $staff['role'] ?? null
                     ];
                 }
-                $class->staffs()->attach($staffData);
+
+                // Explicit attach to avoid wrong FK inference
+                $class->staffs()->attach($staffAttachData);
             }
 
-            // Create schedules
-            if (!empty($request->schedules)) {
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Create Class Schedules
+            |--------------------------------------------------------------------------
+            */
+            if ($request->filled('schedules')) {
+
                 foreach ($request->schedules as $schedule) {
-                    ClassSchedule::create([
+
+                    $class->schedules()->create([
                         'class_id' => $class->id,
                         'day_of_week' => $schedule['day_of_week'],
                         'start_time' => $schedule['start_time'],
@@ -97,7 +119,7 @@ class ClassesController extends Controller
                 'data' => $class->load('staffs', 'schedules')
             ], 201);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 
             DB::rollBack();
 

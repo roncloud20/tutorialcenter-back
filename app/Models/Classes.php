@@ -18,20 +18,25 @@ class Classes extends Model
         'status',
     ];
 
-        public function staffs()
+    public function staffs()
     {
-        return $this->belongsToMany(Staff::class, 'class_staff')
+        return $this->belongsToMany(
+            Staff::class,
+            'class_staff',
+            'class_id',   // Foreign key on pivot referencing Classes
+            'staff_id'    // Foreign key on pivot referencing Staff
+        )
+            ->using(ClassStaff::class) // optional but correct since you created Pivot model
             ->withPivot('role')
             ->withTimestamps();
     }
-
     public function schedules()
     {
-        return $this->hasMany(ClassSchedule::class, 'class');
+        return $this->hasMany(ClassSchedule::class, 'class_id');
     }
 
     public function sessions()
     {
-        return $this->hasMany(ClassSession::class, 'class');
+        return $this->hasMany(ClassSession::class, 'class_id');
     }
 }
