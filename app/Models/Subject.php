@@ -13,25 +13,56 @@ class Subject extends Model
         'name',
         'description',
         'banner',
-        'courses',
-        'departments',
         'status',
-        'assignees',
+        'departments',
     ];
 
-    protected $casts = [
-        'courses' => 'array',
-        'departments' => 'array',
-        'assignees' => 'array',
-    ];
-
-    // public function classes()
-    // {
-    //     return $this->hasMany(Classes::class, 'subject');
-    // }
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function classes()
     {
         return $this->hasMany(Classes::class, 'subject_id');
     }
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class)->withTimestamps();
+    }
+
+    public function staff()
+    {
+        return $this->belongsToMany(Staff::class)
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
 }
+
+// class Subject extends Model
+// {
+//     use SoftDeletes;
+
+//     protected $fillable = [
+//         'name',
+//         'description',
+//         'banner',
+//         'courses',
+//         'departments',
+//         'status',
+//         'assignees',
+//     ];
+
+//     protected $casts = [
+//         'courses' => 'array',
+//         'departments' => 'array',
+//         'assignees' => 'array',
+//     ];
+
+//     public function classes()
+//     {
+//         return $this->hasMany(Classes::class, 'subject_id');
+//     }
+// }

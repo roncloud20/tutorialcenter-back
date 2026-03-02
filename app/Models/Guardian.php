@@ -24,13 +24,11 @@ class Guardian extends Model
         'tel_verified_at',
         'location',
         'address',
-        'students',
     ];
 
     protected $hidden = ['password'];
 
     protected $casts = [
-        'students' => 'array',
         'date_of_birth' => 'date',
         'email_verified_at' => 'datetime',
         'tel_verified_at' => 'datetime',

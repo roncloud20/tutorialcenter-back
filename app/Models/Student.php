@@ -26,7 +26,7 @@ class Student extends Model
         'location',
         'address',
         'department',
-        'guardians',
+        // 'guardians',
     ];
 
     protected $hidden = [
@@ -35,7 +35,7 @@ class Student extends Model
 
     protected $casts = [
         // 'password' => 'hashed',
-        'guardians' => 'array',
+        // 'guardians' => 'array',
         'date_of_birth' => 'date',
         'email_verified_at' => 'datetime',
         'tel_verified_at' => 'datetime',
