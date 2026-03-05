@@ -17,6 +17,12 @@ class Subject extends Model
         'departments',
     ];
 
+    protected $casts = [
+        'courses' => 'array',
+        'departments' => 'array',
+        'assignees' => 'array',
+    ];
+
     /*
     |--------------------------------------------------------------------------
     | Relationships
@@ -36,33 +42,7 @@ class Subject extends Model
     public function staff()
     {
         return $this->belongsToMany(Staff::class)
-                    ->withPivot('role')
-                    ->withTimestamps();
+            ->withPivot('role')
+            ->withTimestamps();
     }
 }
-
-// class Subject extends Model
-// {
-//     use SoftDeletes;
-
-//     protected $fillable = [
-//         'name',
-//         'description',
-//         'banner',
-//         'courses',
-//         'departments',
-//         'status',
-//         'assignees',
-//     ];
-
-//     protected $casts = [
-//         'courses' => 'array',
-//         'departments' => 'array',
-//         'assignees' => 'array',
-//     ];
-
-//     public function classes()
-//     {
-//         return $this->hasMany(Classes::class, 'subject_id');
-//     }
-// }
