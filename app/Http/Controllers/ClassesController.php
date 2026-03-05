@@ -5,48 +5,43 @@ namespace App\Http\Controllers;
 use Validator;
 use App\Models\Classes;
 use App\Models\ClassStaff;
-use Illuminate\Http\Request;
 use App\Models\ClassSchedule;
-use Illuminate\Support\Carbon;
 use App\Models\SubjectsEnrollment;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class ClassesController extends Controller
 {
     /**
-     * Display all classes
+     * Display paginated classes
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $classes = Classes::with([
-            'staffs',
-            'schedules',
-            'sessions'
-        ])
-            ->when($request->status, function ($query) use ($request) {
-                $query->where('status', $request->status);
-            })
+        $classes = Classes::with(['staffs', 'schedules', 'sessions'])
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->latest()
             ->paginate(10);
 
-        return response()->json($classes);
+        return response()->json([
+            'success' => true,
+            'data' => $classes,
+        ]);
     }
 
     /**
-     * Store a newly created class
+     * Create a new class
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'subject_id' => 'required|exists:subjects,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-
             'staffs' => 'nullable|array',
             'staffs.*.staff_id' => 'required|exists:staffs,id',
             'staffs.*.role' => 'nullable|string|max:255',
-
             'schedules' => 'nullable|array',
             'schedules.*.day_of_week' => 'required|in:sunday,monday,tuesday,wednesday,thursday,friday,saturday',
             'schedules.*.start_time' => 'required|date_format:H:i',
@@ -55,58 +50,29 @@ class ClassesController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Class Verification Failed',
-                'errors' => $validator->errors()
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         DB::beginTransaction();
-
         try {
+            // 1️⃣ Create class
+            $class = Classes::create($validator->validated());
 
-            /*
-            |--------------------------------------------------------------------------
-            | 1. Create Class
-            |--------------------------------------------------------------------------
-            */
-            $class = Classes::create([
-                'subject_id' => $request->subject_id,
-                'title' => $request->title,
-                'description' => $request->description ?? null,
-                'status' => $request->status,
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | 2. Attach Staff (Pivot: class_staff)
-            |--------------------------------------------------------------------------
-            */
+            // 2️⃣ Attach staffs
             if ($request->filled('staffs')) {
-
-                $staffAttachData = [];
-
-                foreach ($request->staffs as $staff) {
-
-                    $staffAttachData[$staff['staff_id']] = [
-                        'role' => $staff['role'] ?? null
-                    ];
-                }
-
-                // Explicit attach to avoid wrong FK inference
-                $class->staffs()->attach($staffAttachData);
+                $staffData = collect($request->staffs)->mapWithKeys(fn($s) => [
+                    $s['staff_id'] => ['role' => $s['role'] ?? null]
+                ])->toArray();
+                $class->staffs()->attach($staffData);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 3. Create Class Schedules
-            |--------------------------------------------------------------------------
-            */
+            // 3️⃣ Create schedules
             if ($request->filled('schedules')) {
-
                 foreach ($request->schedules as $schedule) {
-
                     $class->schedules()->create([
-                        'class_id' => $class->id,
                         'day_of_week' => $schedule['day_of_week'],
                         'start_time' => $schedule['start_time'],
                         'end_time' => $schedule['end_time'],
@@ -115,41 +81,39 @@ class ClassesController extends Controller
             }
 
             DB::commit();
-
             return response()->json([
+                'success' => true,
                 'message' => 'Class created successfully',
-                'data' => $class->load('staffs', 'schedules')
+                'data' => $class->load('staffs', 'schedules'),
             ], 201);
 
         } catch (\Throwable $e) {
-
             DB::rollBack();
-
             return response()->json([
+                'success' => false,
                 'message' => 'Failed to create class',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
 
     /**
-     * Display specific class
+     * Show a specific class
      */
-    public function show($id)
+    public function show(int $id): JsonResponse
     {
-        $class = Classes::with([
-            'staffs',
-            'schedules',
-            'sessions'
-        ])->findOrFail($id);
+        $class = Classes::with(['staffs', 'schedules', 'sessions'])->findOrFail($id);
 
-        return response()->json($class);
+        return response()->json([
+            'success' => true,
+            'data' => $class,
+        ]);
     }
 
     /**
      * Update class
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id): JsonResponse
     {
         $class = Classes::findOrFail($id);
 
@@ -159,41 +123,35 @@ class ClassesController extends Controller
             'description' => 'nullable|string',
             'status' => 'sometimes|in:active,inactive',
             'staffs' => 'nullable|array',
-            'staffs.*.staff_id' => 'required|exists:staff,id',
+            'staffs.*.staff_id' => 'required|exists:staffs,id',
             'staffs.*.role' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
-
         try {
-
             $class->update($validated);
 
-            // Sync staffs if provided
-            if ($request->has('staffs')) {
-                $staffData = [];
-                foreach ($validated['staffs'] as $staff) {
-                    $staffData[$staff['staff_id']] = [
-                        'role' => $staff['role'] ?? null
-                    ];
-                }
+            // Sync staffs
+            if (!empty($validated['staffs'])) {
+                $staffData = collect($validated['staffs'])->mapWithKeys(fn($s) => [
+                    $s['staff_id'] => ['role' => $s['role'] ?? null]
+                ])->toArray();
                 $class->staffs()->sync($staffData);
             }
 
             DB::commit();
-
             return response()->json([
+                'success' => true,
                 'message' => 'Class updated successfully',
-                'data' => $class->load('staffs', 'schedules')
+                'data' => $class->load('staffs', 'schedules'),
             ]);
 
-        } catch (\Exception $e) {
-
+        } catch (\Throwable $e) {
             DB::rollBack();
-
             return response()->json([
+                'success' => false,
                 'message' => 'Failed to update class',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -201,179 +159,522 @@ class ClassesController extends Controller
     /**
      * Soft delete class
      */
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         $class = Classes::findOrFail($id);
         $class->delete();
 
         return response()->json([
-            'message' => 'Class deleted successfully'
+            'success' => true,
+            'message' => 'Class deleted successfully',
         ]);
     }
 
     /**
-     * Restore soft deleted class
+     * Restore soft-deleted class
      */
-    public function restore($id)
+    public function restore(int $id): JsonResponse
     {
         $class = Classes::withTrashed()->findOrFail($id);
         $class->restore();
 
         return response()->json([
-            'message' => 'Class restored successfully'
+            'success' => true,
+            'message' => 'Class restored successfully',
         ]);
     }
 
     /**
      * Permanently delete class
      */
-    public function forceDelete($id)
+    public function forceDelete(int $id): JsonResponse
     {
         $class = Classes::withTrashed()->findOrFail($id);
         $class->forceDelete();
 
         return response()->json([
-            'message' => 'Class permanently deleted'
+            'success' => true,
+            'message' => 'Class permanently deleted',
         ]);
     }
 
     /**
      * Update class status
      */
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'status' => 'required|in:active,inactive'
-        ]);
+        $request->validate(['status' => 'required|in:active,inactive']);
 
         $class = Classes::findOrFail($id);
         $class->update(['status' => $request->status]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Status updated successfully',
-            'data' => $class
+            'data' => $class,
         ]);
     }
 
     /**
-     * Attach staff to class
+     * Attach staff
      */
-    public function attachStaff(Request $request, $id)
+    public function attachStaff(Request $request, int $id): JsonResponse
     {
         $class = Classes::findOrFail($id);
 
         $validated = $request->validate([
-            'staff_id' => 'required|exists:staff,id',
-            'role' => 'nullable|string|max:255'
+            'staff_id' => 'required|exists:staffs,id',
+            'role' => 'nullable|string|max:255',
         ]);
 
-        $class->staffs()->attach($validated['staff_id'], [
-            'role' => $validated['role'] ?? null
-        ]);
+        $class->staffs()->attach($validated['staff_id'], ['role' => $validated['role'] ?? null]);
 
         return response()->json([
-            'message' => 'Staff attached successfully'
+            'success' => true,
+            'message' => 'Staff attached successfully',
         ]);
     }
 
     /**
-     * Detach staff from class
+     * Detach staff
      */
-    public function detachStaff($classId, $staffId)
+    public function detachStaff(int $classId, int $staffId): JsonResponse
     {
         $class = Classes::findOrFail($classId);
         $class->staffs()->detach($staffId);
 
         return response()->json([
-            'message' => 'Staff detached successfully'
+            'success' => true,
+            'message' => 'Staff detached successfully',
         ]);
     }
 
     /**
-     * Get student schedule (enrolled classes + sessions)
+     * Student schedule: enrolled classes + upcoming sessions
      */
-    public function studentSchedule(Request $request)
+    public function studentSchedule(Request $request): JsonResponse
     {
-        $studentId = $request->user()->id; // assuming auth student
+        $studentId = $request->user()->id;
 
-        // 1️⃣ Get enrolled subjects
-        $subjectEnrollments = SubjectsEnrollment::with([
+        $enrollments = SubjectsEnrollment::with([
             'subject.classes.staffs',
-            'subject.classes.schedules.sessions' => function ($query) {
-                $query->whereDate('session_date', '>=', now())
-                    ->orderBy('session_date')
-                    ->orderBy('starts_at');
-            }
-        ])
-            ->where('student', $studentId)
-            ->get();
+            'subject.classes.schedules.sessions' => fn($q) => $q
+                ->whereDate('session_date', '>=', now())
+                ->orderBy('session_date')
+                ->orderBy('starts_at')
+        ])->where('student', $studentId)->get();
 
-        // 2️⃣ Format response
-        $data = $subjectEnrollments->map(function ($enrollment) {
-
-            $subject = $enrollment->subject;
-
-            if (!$subject) {
-                return null;
-            }
-
-            return [
-                'subject' => $subject->name,
-
-                'classes' => $subject->classes?->map(function ($class) {
-
-                    return [
-                        'class_id' => $class->id,
-                        'title' => $class->title,
-                        'description' => $class->description,
-                        'status' => $class->status,
-                    ];
-
-                }) ?? []
-            ];
-        })->filter()->values();
-        // $data = $subjectEnrollments->map(function ($enrollment) {
-
-        //     return [
-        //         'subject' => $enrollment->subject->name ?? null,
-
-        //         'classes' => $enrollment->subject->classes->map(function ($class) {
-
-        //             return [
-        //                 'class_id' => $class->id,
-        //                 'title' => $class->title,
-        //                 'description' => $class->description,
-        //                 'status' => $class->status,
-
-        //                 'tutors' => $class->staffs->map(function ($staff) {
-        //                     return [
-        //                         'id' => $staff->id,
-        //                         'name' => $staff->name,
-        //                         'role' => $staff->pivot->role,
-        //                     ];
-        //                 }),
-
-        //                 'weekly_schedule' => $class->schedules->map(function ($schedule) {
-        //                     return [
-        //                         'day_of_week' => $schedule->day_of_week,
-        //                         'start_time' => $schedule->start_time,
-        //                         'end_time' => $schedule->end_time,
-        //                     ];
-        //                 }),
-
-        //                 'upcoming_sessions' => $class->schedules
-        //                     ->flatMap(function ($schedule) {
-        //                         return $schedule->sessions;
-        //                     })
-        //                     ->values()
-        //             ];
-        //         })
-        //     ];
-        // });
+        $data = $enrollments->map(fn($enrollment) => $enrollment->subject ? [
+            'subject' => $enrollment->subject->name,
+            'classes' => $enrollment->subject->classes->map(fn($class) => [
+                'class_id' => $class->id,
+                'title' => $class->title,
+                'description' => $class->description,
+                'status' => $class->status,
+                'tutors' => $class->staffs->map(fn($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'role' => $s->pivot->role,
+                ]),
+                'weekly_schedule' => $class->schedules->map(fn($schedule) => [
+                    'day_of_week' => $schedule->day_of_week,
+                    'start_time' => $schedule->start_time,
+                    'end_time' => $schedule->end_time,
+                ]),
+                'upcoming_sessions' => $class->schedules->flatMap(fn($s) => $s->sessions)->values(),
+            ])
+        ] : null)->filter()->values();
 
         return response()->json([
-            'status' => true,
-            'data' => $data
+            'success' => true,
+            'data' => $data,
         ]);
     }
 }
+
+
+
+
+
+
+
+
+
+
+// namespace App\Http\Controllers;
+
+// use Validator;
+// use App\Models\Classes;
+// use App\Models\ClassStaff;
+// use Illuminate\Http\Request;
+// use App\Models\ClassSchedule;
+// use Illuminate\Support\Carbon;
+// use App\Models\SubjectsEnrollment;
+// use Illuminate\Support\Facades\DB;
+
+// class ClassesController extends Controller
+// {
+//     /**
+//      * Display all classes
+//      */
+//     public function index(Request $request)
+//     {
+//         $classes = Classes::with([
+//             'staffs',
+//             'schedules',
+//             'sessions'
+//         ])
+//             ->when($request->status, function ($query) use ($request) {
+//                 $query->where('status', $request->status);
+//             })
+//             ->latest()
+//             ->paginate(10);
+
+//         return response()->json($classes);
+//     }
+
+//     /**
+//      * Store a newly created class
+//      */
+//     public function store(Request $request)
+//     {
+//         $validator = Validator::make($request->all(), [
+//             'subject_id' => 'required|exists:subjects,id',
+//             'title' => 'required|string|max:255',
+//             'description' => 'nullable|string',
+//             'status' => 'required|in:active,inactive',
+
+//             'staffs' => 'nullable|array',
+//             'staffs.*.staff_id' => 'required|exists:staffs,id',
+//             'staffs.*.role' => 'nullable|string|max:255',
+
+//             'schedules' => 'nullable|array',
+//             'schedules.*.day_of_week' => 'required|in:sunday,monday,tuesday,wednesday,thursday,friday,saturday',
+//             'schedules.*.start_time' => 'required|date_format:H:i',
+//             'schedules.*.end_time' => 'required|date_format:H:i',
+//         ]);
+
+//         if ($validator->fails()) {
+//             return response()->json([
+//                 'message' => 'Class Verification Failed',
+//                 'errors' => $validator->errors()
+//             ], 422);
+//         }
+
+//         DB::beginTransaction();
+
+//         try {
+
+//             /*
+//             |--------------------------------------------------------------------------
+//             | 1. Create Class
+//             |--------------------------------------------------------------------------
+//             */
+//             $class = Classes::create([
+//                 'subject_id' => $request->subject_id,
+//                 'title' => $request->title,
+//                 'description' => $request->description ?? null,
+//                 'status' => $request->status,
+//             ]);
+
+//             /*
+//             |--------------------------------------------------------------------------
+//             | 2. Attach Staff (Pivot: class_staff)
+//             |--------------------------------------------------------------------------
+//             */
+//             if ($request->filled('staffs')) {
+
+//                 $staffAttachData = [];
+
+//                 foreach ($request->staffs as $staff) {
+
+//                     $staffAttachData[$staff['staff_id']] = [
+//                         'role' => $staff['role'] ?? null
+//                     ];
+//                 }
+
+//                 // Explicit attach to avoid wrong FK inference
+//                 $class->staffs()->attach($staffAttachData);
+//             }
+
+//             /*
+//             |--------------------------------------------------------------------------
+//             | 3. Create Class Schedules
+//             |--------------------------------------------------------------------------
+//             */
+//             if ($request->filled('schedules')) {
+
+//                 foreach ($request->schedules as $schedule) {
+
+//                     $class->schedules()->create([
+//                         'class_id' => $class->id,
+//                         'day_of_week' => $schedule['day_of_week'],
+//                         'start_time' => $schedule['start_time'],
+//                         'end_time' => $schedule['end_time'],
+//                     ]);
+//                 }
+//             }
+
+//             DB::commit();
+
+//             return response()->json([
+//                 'message' => 'Class created successfully',
+//                 'data' => $class->load('staffs', 'schedules')
+//             ], 201);
+
+//         } catch (\Throwable $e) {
+
+//             DB::rollBack();
+
+//             return response()->json([
+//                 'message' => 'Failed to create class',
+//                 'error' => $e->getMessage()
+//             ], 500);
+//         }
+//     }
+
+//     /**
+//      * Display specific class
+//      */
+//     public function show($id)
+//     {
+//         $class = Classes::with([
+//             'staffs',
+//             'schedules',
+//             'sessions'
+//         ])->findOrFail($id);
+
+//         return response()->json($class);
+//     }
+
+//     /**
+//      * Update class
+//      */
+//     public function update(Request $request, $id)
+//     {
+//         $class = Classes::findOrFail($id);
+
+//         $validated = $request->validate([
+//             'subject_id' => 'sometimes|exists:subjects,id',
+//             'title' => 'sometimes|string|max:255',
+//             'description' => 'nullable|string',
+//             'status' => 'sometimes|in:active,inactive',
+//             'staffs' => 'nullable|array',
+//             'staffs.*.staff_id' => 'required|exists:staff,id',
+//             'staffs.*.role' => 'nullable|string|max:255',
+//         ]);
+
+//         DB::beginTransaction();
+
+//         try {
+
+//             $class->update($validated);
+
+//             // Sync staffs if provided
+//             if ($request->has('staffs')) {
+//                 $staffData = [];
+//                 foreach ($validated['staffs'] as $staff) {
+//                     $staffData[$staff['staff_id']] = [
+//                         'role' => $staff['role'] ?? null
+//                     ];
+//                 }
+//                 $class->staffs()->sync($staffData);
+//             }
+
+//             DB::commit();
+
+//             return response()->json([
+//                 'message' => 'Class updated successfully',
+//                 'data' => $class->load('staffs', 'schedules')
+//             ]);
+
+//         } catch (\Exception $e) {
+
+//             DB::rollBack();
+
+//             return response()->json([
+//                 'message' => 'Failed to update class',
+//                 'error' => $e->getMessage()
+//             ], 500);
+//         }
+//     }
+
+//     /**
+//      * Soft delete class
+//      */
+//     public function destroy($id)
+//     {
+//         $class = Classes::findOrFail($id);
+//         $class->delete();
+
+//         return response()->json([
+//             'message' => 'Class deleted successfully'
+//         ]);
+//     }
+
+//     /**
+//      * Restore soft deleted class
+//      */
+//     public function restore($id)
+//     {
+//         $class = Classes::withTrashed()->findOrFail($id);
+//         $class->restore();
+
+//         return response()->json([
+//             'message' => 'Class restored successfully'
+//         ]);
+//     }
+
+//     /**
+//      * Permanently delete class
+//      */
+//     public function forceDelete($id)
+//     {
+//         $class = Classes::withTrashed()->findOrFail($id);
+//         $class->forceDelete();
+
+//         return response()->json([
+//             'message' => 'Class permanently deleted'
+//         ]);
+//     }
+
+//     /**
+//      * Update class status
+//      */
+//     public function updateStatus(Request $request, $id)
+//     {
+//         $request->validate([
+//             'status' => 'required|in:active,inactive'
+//         ]);
+
+//         $class = Classes::findOrFail($id);
+//         $class->update(['status' => $request->status]);
+
+//         return response()->json([
+//             'message' => 'Status updated successfully',
+//             'data' => $class
+//         ]);
+//     }
+
+//     /**
+//      * Attach staff to class
+//      */
+//     public function attachStaff(Request $request, $id)
+//     {
+//         $class = Classes::findOrFail($id);
+
+//         $validated = $request->validate([
+//             'staff_id' => 'required|exists:staff,id',
+//             'role' => 'nullable|string|max:255'
+//         ]);
+
+//         $class->staffs()->attach($validated['staff_id'], [
+//             'role' => $validated['role'] ?? null
+//         ]);
+
+//         return response()->json([
+//             'message' => 'Staff attached successfully'
+//         ]);
+//     }
+
+//     /**
+//      * Detach staff from class
+//      */
+//     public function detachStaff($classId, $staffId)
+//     {
+//         $class = Classes::findOrFail($classId);
+//         $class->staffs()->detach($staffId);
+
+//         return response()->json([
+//             'message' => 'Staff detached successfully'
+//         ]);
+//     }
+
+//     /**
+//      * Get student schedule (enrolled classes + sessions)
+//      */
+//     public function studentSchedule(Request $request)
+//     {
+//         $studentId = $request->user()->id; // assuming auth student
+
+//         // 1️⃣ Get enrolled subjects
+//         $subjectEnrollments = SubjectsEnrollment::with([
+//             'subject.classes.staffs',
+//             'subject.classes.schedules.sessions' => function ($query) {
+//                 $query->whereDate('session_date', '>=', now())
+//                     ->orderBy('session_date')
+//                     ->orderBy('starts_at');
+//             }
+//         ])
+//             ->where('student', $studentId)
+//             ->get();
+
+//         // 2️⃣ Format response
+//         $data = $subjectEnrollments->map(function ($enrollment) {
+
+//             $subject = $enrollment->subject;
+
+//             if (!$subject) {
+//                 return null;
+//             }
+
+//             return [
+//                 'subject' => $subject->name,
+
+//                 'classes' => $subject->classes?->map(function ($class) {
+
+//                     return [
+//                         'class_id' => $class->id,
+//                         'title' => $class->title,
+//                         'description' => $class->description,
+//                         'status' => $class->status,
+//                     ];
+
+//                 }) ?? []
+//             ];
+//         })->filter()->values();
+//         // $data = $subjectEnrollments->map(function ($enrollment) {
+
+//         //     return [
+//         //         'subject' => $enrollment->subject->name ?? null,
+
+//         //         'classes' => $enrollment->subject->classes->map(function ($class) {
+
+//         //             return [
+//         //                 'class_id' => $class->id,
+//         //                 'title' => $class->title,
+//         //                 'description' => $class->description,
+//         //                 'status' => $class->status,
+
+//         //                 'tutors' => $class->staffs->map(function ($staff) {
+//         //                     return [
+//         //                         'id' => $staff->id,
+//         //                         'name' => $staff->name,
+//         //                         'role' => $staff->pivot->role,
+//         //                     ];
+//         //                 }),
+
+//         //                 'weekly_schedule' => $class->schedules->map(function ($schedule) {
+//         //                     return [
+//         //                         'day_of_week' => $schedule->day_of_week,
+//         //                         'start_time' => $schedule->start_time,
+//         //                         'end_time' => $schedule->end_time,
+//         //                     ];
+//         //                 }),
+
+//         //                 'upcoming_sessions' => $class->schedules
+//         //                     ->flatMap(function ($schedule) {
+//         //                         return $schedule->sessions;
+//         //                     })
+//         //                     ->values()
+//         //             ];
+//         //         })
+//         //     ];
+//         // });
+
+//         return response()->json([
+//             'status' => true,
+//             'data' => $data
+//         ]);
+//     }
+// }
