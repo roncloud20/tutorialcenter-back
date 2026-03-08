@@ -17,7 +17,7 @@ class PaymentController extends Controller
                 'course_enrollment_id' => 'required|exists:courses_enrollments,id',
                 'amount' => 'required|numeric|min:0',
                 'payment_method' => 'required|in:card,bank_transfer,ussd,wallet,manual',
-                'billing_cycle' => 'required|in:monthly,quarterly,semi-annual,annual',
+                'billing_cycle' => 'required|in:monthly,quarterly,semi_annual,annual',
                 'gateway' => 'nullable|string',
                 'status' => 'required|in:pending,successful,failed,cancelled,refunded',
                 'gateway_reference' => 'nullable|string|unique:payments,gateway_reference',
