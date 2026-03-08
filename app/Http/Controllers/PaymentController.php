@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CoursesEnrollment;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 
@@ -25,6 +26,9 @@ class PaymentController extends Controller
             ]);
 
             $payment = Payment::create($validated);
+
+            CoursesEnrollment::where('id', $validated['course_enrollment_id'])
+                ->update(['status' => 'active']);
 
             return response()->json([
                 'message' => 'Payment created successfully.',

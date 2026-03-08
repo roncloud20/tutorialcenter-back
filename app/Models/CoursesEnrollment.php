@@ -15,6 +15,7 @@ class CoursesEnrollment extends Model
         'end_date',
         'billing_cycle',
         'cost',
+        'status',
     ];
 
     protected $casts = [
