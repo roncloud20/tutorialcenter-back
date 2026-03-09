@@ -55,6 +55,8 @@ Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(f
 |--------------------------------------------------------------------------
 */
 Route::prefix('staffs')->group(function () {
+    // Login (restricted until verified)
+    Route::post('/login', [StaffController::class, 'login']);
 
     // Registration (Admin only — enforced in controller)
     Route::post('/register', [StaffController::class, 'store']);
@@ -66,9 +68,6 @@ Route::prefix('staffs')->group(function () {
     // Phone OTP verification
     Route::post('/verify-phone', [StaffController::class, 'verifyPhoneOtp']);
     Route::post('/resend-phone-otp', [StaffController::class, 'resendPhoneOtp']);
-
-    // Login (restricted until verified)
-    Route::post('/login', [StaffController::class, 'login']);
 
     Route::middleware('auth:staff')->group(function () {
         // Logout
