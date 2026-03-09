@@ -41,9 +41,13 @@ class SubjectsEnrollment extends Model
      * The subject being enrolled.
      */
     public function subject()
-    {
-        return $this->belongsTo(Subject::class, 'subject_id');
-    }
+{
+    return $this->belongsTo(Subject::class);
+}
+    // public function subject()
+    // {
+    //     return $this->belongsTo(Subject::class, 'subject_id');
+    // }
 }
 
 

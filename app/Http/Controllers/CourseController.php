@@ -262,7 +262,8 @@ class CourseController extends Controller
             };
 
             $cost = $course->price * $months;
-            if ($months > 1) $cost *= 0.95; // 5% discount for multi-month cycles
+            if ($months > 1)
+                $cost *= 0.95; // 5% discount for multi-month cycles
 
             $enrollment = CoursesEnrollment::create([
                 'course_id' => $course->id,
@@ -293,46 +294,111 @@ class CourseController extends Controller
     /**
      * Fetch active courses with enrolled subjects
      */
+
     public function getActiveCourses(Request $request): JsonResponse
-    {
-        try {
-            $studentId = $request->user()->id;
-            $now = now();
+{
+    try {
+        $studentId = $request->user()->id;
+        $now = now();
 
-            $enrollments = CoursesEnrollment::with(['course', 'subjects.subject'])
-                ->where('student', $studentId)
-                ->where('start_date', '<=', $now)
-                ->where('end_date', '>=', $now)
-                ->whereHas('payments', fn($q) => $q->successful())
-                ->get();
+        $enrollments = CoursesEnrollment::with([
+            'course',
+            'subjects.subject'
+        ])
+        ->where('student_id', $studentId)
+        ->where('start_date', '<=', $now)
+        ->where('end_date', '>=', $now)
+        ->whereHas('payments', function ($q) {
+            $q->where('status', 'successful');
+        })
+        ->get();
 
-            $mergedCourses = $enrollments->map(fn($enrollment) => [
+        $courses = $enrollments->map(function ($enrollment) {
+            return [
                 'enrollment_id' => $enrollment->id,
-                'student' => $enrollment->student,
+                'student_id' => $enrollment->student_id,
+                'course_id' => $enrollment->course_id,
                 'start_date' => $enrollment->start_date,
                 'end_date' => $enrollment->end_date,
                 'billing_cycle' => $enrollment->billing_cycle,
-                'course' => $enrollment->course,
-                'subjects' => $enrollment->subjects->map(fn($sub) => [
-                    'id' => $sub->subject->id,
-                    'name' => $sub->subject->name,
-                    'description' => $sub->subject->description,
-                    'banner' => $sub->subject->banner,
-                    'progress' => $sub->progress,
-                ]),
-            ])->values();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Active paid courses retrieved successfully.',
-                'courses' => $mergedCourses,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve active courses.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
-        }
+                // IMPORTANT for React
+                'course' => [
+                    'id' => $enrollment->course->id ?? null,
+                    'title' => $enrollment->course->title ?? null,
+                    'description' => $enrollment->course->description ?? null,
+                ],
+
+                'subjects' => $enrollment->subjects->map(function ($sub) {
+                    return [
+                        'id' => optional($sub->subject)->id,
+                        'name' => optional($sub->subject)->name,
+                        'description' => optional($sub->subject)->description,
+                        'banner' => optional($sub->subject)->banner,
+                        'progress' => $sub->progress ?? 0,
+                    ];
+                })->values()
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Active paid courses retrieved successfully.',
+            'courses' => $courses
+        ]);
+
+    } catch (\Throwable $e) {
+
+        // VERY IMPORTANT for debugging
+        \Log::error($e);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve active courses.',
+            'error' => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
     }
+}
+    // public function getActiveCourses(Request $request): JsonResponse
+    // {
+    //     try {
+    //         $studentId = $request->user()->id;
+    //         $now = now();
+
+    //         $enrollments = CoursesEnrollment::with(['course', 'subjects.subject_id'])
+    //             ->where('student_id', $studentId)
+    //             ->where('start_date', '<=', $now)
+    //             ->where('end_date', '>=', $now)
+    //             ->whereHas('payments', fn($q) => $q->successful())
+    //             ->get();
+
+    //         $mergedCourses = $enrollments->map(fn($enrollment) => [
+    //             'enrollment_id' => $enrollment->id,
+    //             'student_id' => $enrollment->student_id,
+    //             'start_date' => $enrollment->start_date,
+    //             'end_date' => $enrollment->end_date,
+    //             'billing_cycle' => $enrollment->billing_cycle,
+    //             'course_id' => $enrollment->course_id,
+    //             'subjects' => $enrollment->subjects->map(fn($sub) => [
+    //                 'id' => $sub->subject->id,
+    //                 'name' => $sub->subject->name,
+    //                 'description' => $sub->subject->description,
+    //                 'banner' => $sub->subject->banner,
+    //                 'progress' => $sub->progress,
+    //             ]),
+    //         ])->values();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Active paid courses retrieved successfully.',
+    //             'courses' => $mergedCourses,
+    //         ]);
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to retrieve active courses.',
+    //             'error' => config('app.debug') ? $e->getMessage() : null,
+    //         ], 500);
+    //     }
+    // }
 }

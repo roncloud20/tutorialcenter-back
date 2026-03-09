@@ -40,6 +40,11 @@ class CoursesEnrollment extends Model
         return $this->belongsTo(Student::class);
     }
 
+    public function subjects()
+{
+    return $this->hasMany(SubjectsEnrollment::class, 'course_enrollment_id');
+}
+
     public function payments()
     {
         return $this->hasMany(Payment::class, 'course_enrollment_id');
