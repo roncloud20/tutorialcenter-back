@@ -32,6 +32,10 @@ return new class extends Migration {
             $table->time('start_time');
             $table->time('end_time');
 
+            // Start date and end date for the schedule (optional)
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+
             // Soft deletes and timestamps
             $table->softDeletes();
             $table->timestamps();

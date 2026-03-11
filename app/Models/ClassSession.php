@@ -45,5 +45,11 @@ class ClassSession extends Model
     {
         return $this->belongsTo(ClassSchedule::class, 'class_schedule_id');
     }
+
+    // Each session can have many attendances
+    public function attendances()
+{
+    return $this->hasMany(ClassAttendance::class, 'class_session_id');
+}
 }
 

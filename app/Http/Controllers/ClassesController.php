@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassSession;
+use App\Models\Holiday;
+use Carbon\Carbon;
 use Validator;
 use App\Models\Classes;
 use App\Models\ClassStaff;
@@ -289,5 +292,86 @@ class ClassesController extends Controller
             'success' => true,
             'data' => $data,
         ]);
+    }
+
+    /**
+     * Create schedule and generate sessions for a class
+     */
+    public function createScheduleAndSessions(Request $request)
+    {
+        $validated = $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'schedules' => 'required|array',
+
+            'schedules.*.day_of_week' => 'required|integer|min:0|max:6',
+            'schedules.*.start_time' => 'required|date_format:H:i',
+            'schedules.*.duration_minutes' => 'required|integer|min:1'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $sessionsCreated = 0;
+
+            foreach ($validated['schedules'] as $scheduleData) {
+
+                $endTime = Carbon::createFromFormat('H:i', $scheduleData['start_time'])
+                    ->addMinutes($scheduleData['duration_minutes'])
+                    ->format('H:i');
+
+                $schedule = ClassSchedule::create([
+                    'class_id' => $validated['class_id'],
+                    'day_of_week' => $scheduleData['day_of_week'],
+                    'start_time' => $scheduleData['start_time'],
+                    'end_time' => $endTime,
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                ]);
+
+                $current = Carbon::parse($validated['start_date']);
+
+                $current->next($scheduleData['day_of_week']);
+
+                while ($current->lte($validated['end_date'])) {
+
+                    $isHoliday = Holiday::whereDate('holiday_date', $current)->exists();
+
+                    if (!$isHoliday) {
+
+                        ClassSession::create([
+                            'class_id' => $validated['class_id'],
+                            'class_schedule_id' => $schedule->id,
+                            'session_date' => $current->toDateString(),
+                            'starts_at' => $scheduleData['start_time'],
+                            'ends_at' => $endTime,
+                            'status' => 'scheduled'
+                        ]);
+
+                        $sessionsCreated++;
+                    }
+
+                    $current->addWeek();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Schedule and sessions created successfully',
+                'sessions_created' => $sessionsCreated
+            ]);
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to create schedule',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

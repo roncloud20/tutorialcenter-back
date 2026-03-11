@@ -34,31 +34,39 @@ class Student extends Model
 
     protected $casts = [
         // 'password' => 'hashed',
-        // 'guardians' => 'array',
         'date_of_birth' => 'date',
         'email_verified_at' => 'datetime',
         'tel_verified_at' => 'datetime',
     ];
 
+    // Each student can have one email verification record
     public function emailVerification()
     {
         return $this->morphOne(EmailVerification::class, 'verifiable');
     }
 
-
+    // Each student can have many course enrollments
     public function courseEnrollments()
     {
         return $this->hasMany(CoursesEnrollment::class, 'student');
     }
 
+    // Each student can have many subject enrollments
     public function subjectEnrollments()
     {
         return $this->hasMany(SubjectsEnrollment::class, 'student');
     }
 
+    // Each student can have many payments
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    // Each student can have many attendances
+    public function attendances()
+    {
+        return $this->hasMany(ClassAttendance::class, 'student_id');
     }
 
 }

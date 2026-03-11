@@ -15,6 +15,8 @@ class ClassSchedule extends Model
         'day_of_week',
         'start_time',
         'end_time',
+        'start_date',
+        'end_date',
     ];
 
     /**
@@ -23,6 +25,8 @@ class ClassSchedule extends Model
     protected $casts = [
         'start_time' => 'string',
         'end_time'   => 'string',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     /**
