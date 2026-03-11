@@ -36,8 +36,6 @@ return new class extends Migration {
             $table->string('title');
             $table->text('description')->nullable();
 
-            // $table->json('staffs')->nullable(); // consider pivot table instead
-
             $table->enum('status', ['active', 'inactive'])
                 ->default('active')
                 ->index();

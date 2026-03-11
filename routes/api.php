@@ -58,8 +58,8 @@ Route::prefix('staffs')->group(function () {
     // Login (restricted until verified)
     Route::post('/login', [StaffController::class, 'login']);
 
-    // Registration (Admin only — enforced in controller)
-    Route::post('/register', [StaffController::class, 'store']);
+    // // Registration (Admin only — enforced in controller)
+    // Route::post('/register', [StaffController::class, 'store']);
 
     // Email verification
     Route::get('/verify-email', [StaffController::class, 'verifyEmail']);
@@ -92,9 +92,12 @@ Route::prefix('guardians')->group(function () {
 });
 
 /*
- * Admin Only Protected Routes
+ * Admin Only Protected Routes (enforced in controller)
  */
 Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:admin'])->group(function () {
+    // Registration 
+    Route::post('/register', [StaffController::class, 'store']);
+
     // Course Management
     Route::post('/courses', [CourseController::class, 'store']);
     Route::put('/courses/update/{id}', [CourseController::class, 'update']);

@@ -26,6 +26,7 @@ return new class extends Migration {
                   ->default('lead');
 
             // Timestamps
+            $table->softDeletes();
             $table->timestamps();
 
             // Prevent duplicate assignment

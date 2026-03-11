@@ -2,9 +2,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassStaff extends Pivot
 {
+    use SoftDeletes;
     protected $table = 'class_staff';
 
     protected $fillable = [
