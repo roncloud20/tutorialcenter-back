@@ -44,4 +44,11 @@ class Staff extends Model
         return $this->morphOne(EmailVerification::class, 'verifiable');
     }
 
+    public function advisees()
+{
+    return $this->belongsToMany(Student::class, 'student_advisors')
+        ->withPivot(['role', 'assigned_at'])
+        ->withTimestamps();
+}
+
 }

@@ -69,4 +69,11 @@ class Student extends Model
         return $this->hasMany(ClassAttendance::class, 'student_id');
     }
 
+    public function advisors()
+{
+    return $this->belongsToMany(Staff::class, 'student_advisors')
+        ->withPivot(['role', 'assigned_at'])
+        ->withTimestamps();
+}
+
 }
