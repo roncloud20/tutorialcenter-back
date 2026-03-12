@@ -594,9 +594,8 @@ class StudentController extends Controller
     /**
     * logout.
     **/
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()?->delete();
+    public function logout(Request $request){
+        $request->user()->tokens()->delete();
 
         return response()->json([
             'message' => 'Logged out successfully.',

@@ -47,6 +47,7 @@ Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(f
     Route::get('/courses', [CourseController::class, 'getActiveCourses']); // Get Active Courses and Subject 
     Route::get('/payments', [PaymentController::class, 'myPayments']); // Listing out all payments
     Route::get('/schedule', [ClassesController::class, 'index']); // Get student schedule (classes and sessions)
+    Route::post('/logout', [StudentController::class, 'logout']); // Logout Method
 });
 
 
