@@ -180,13 +180,13 @@ class SubjectController extends Controller
     }
 
     /*
-     * Public Method: List subjects by department
+     * Public Method: List subjects by course
      */
-    public function subjectsByDepartment(string $department)
+    public function subjectsByCourse(int $courseId)
     {
         try {
             $subjects = Subject::where('status', 'active')
-                ->where('department', $department)
+                ->whereJsonContains('courses', $courseId)
                 ->get();
 
             return response()->json([
@@ -201,6 +201,7 @@ class SubjectController extends Controller
             ], 500);
         }
     }
+   
 
     /*
      * Public Method: List subjects by course and department
