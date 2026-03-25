@@ -21,8 +21,7 @@ class StudentController extends Controller
     /**
      * Summary of store
      **/
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         // 1. Validate input
         $validator = Validator::make($request->all(), [
             'email' => 'nullable|email|unique:students,email|required_without:tel',
