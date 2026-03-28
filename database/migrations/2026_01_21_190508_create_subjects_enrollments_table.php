@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Prevent duplicate entries: same student in same subject under same course enrollment
-            // $table->unique(['course_enrollment_id', 'subject_id', 'student_id']);
+            $table->unique(['course_enrollment_id', 'subject_id', 'student_id'], 'unique_subject_enrollment');
         });
     }
 
