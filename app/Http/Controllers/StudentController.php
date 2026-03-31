@@ -230,8 +230,8 @@ class StudentController extends Controller
             ->where('verifiable_id', $user->id)
             ->delete();
 
-        // $token = Str::uuid();
-        $token = rand(100000, 999999);
+        $token = Str::uuid();
+        // $token = rand(100000, 999999);
 
         EmailVerification::create([
             'verifiable_type' => get_class($user),
