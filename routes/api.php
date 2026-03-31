@@ -28,7 +28,8 @@ Route::post('payments', [PaymentController::class, 'store']); // Public: Process
 |--------------------------------------------------------------------------
 */
 Route::prefix('students')->group(function () {
-    Route::post('/register', [StudentController::class, 'store']); // Registration
+    Route::post('/register', [StudentController::class, 'registerWithBiodata']); // Registration
+    // Route::post('/register', [StudentController::class, 'store']); // Registration
     Route::post('/verify-email', [StudentController::class, 'verifyEmail']); // Email verification
     Route::post('/resend-email-verification', [StudentController::class, 'resendEmailVerification']); // Resend Email Verification
     Route::post('/verify-phone', [StudentController::class, 'verifyPhoneOtp']); // Phone OTP verification

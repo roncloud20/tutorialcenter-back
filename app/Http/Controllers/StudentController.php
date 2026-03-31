@@ -18,6 +18,123 @@ use App\Notifications\StudentEmailVerification;
 
 class StudentController extends Controller
 {
+    // Version 1: Basic registration with separate biodata completion
+    public function registerWithBiodata(Request $request)
+{
+    // 1. Validate everything
+    $validator = Validator::make($request->all(), [
+        // Auth fields
+        'email' => 'nullable|email|unique:students,email|required_without:tel',
+        'tel' => [
+            'nullable',
+            'string',
+            'unique:students,tel',
+            'required_without:email',
+            'regex:/^(\+234|234|0)(70|80|81|90|91)\d{8}$/',
+        ],
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+            'same:confirmPassword',
+            'regex:/[a-z]/',
+            'regex:/[A-Z]/',
+            'regex:/[0-9]/',
+            'regex:/[@$!%*#?&]/',
+        ],
+        'confirmPassword' => 'required|string|min:8|same:password',
+
+        // Biodata fields
+        'firstname' => 'required|string|max:50',
+        'surname' => 'required|string|max:50',
+        'gender' => 'required|string|in:male,female,others',
+        'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'date_of_birth' => 'required|date|before:today',
+        'location' => 'required|string',
+        'address' => 'nullable|string',
+        'department' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'errors' => $validator->errors(),
+            'message' => 'Registration failed.',
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $data = $validator->validated();
+
+        /**
+         * 2. Create student
+         */
+        $student = Student::create([
+            'email' => $data['email'] ?? null,
+            'tel' => $data['tel'] ?? null,
+            'password' => Hash::make($data['password']),
+        ]);
+
+        /**
+         * 3. Trigger verification (MUST succeed)
+         */
+        if ($student->email) {
+            app(EmailVerificationService::class)->send($student);
+        }
+
+        if ($student->tel) {
+            $this->sendPhoneOtp($student->tel);
+        }
+
+        /**
+         * ⚠️ IMPORTANT DESIGN DECISION
+         * 
+         * You CANNOT enforce verification here yet,
+         * because verification happens AFTER this request.
+         * 
+         * So we store biodata but mark user as "pending verification"
+         */
+
+        /**
+         * 4. Handle profile picture
+         */
+        if ($request->hasFile('profile_picture')) {
+            $file = $request->file('profile_picture');
+            $path = $file->store('student_profile_pictures', 'public');
+            $data['profile_picture'] = $path;
+        }
+
+        /**
+         * 5. Save biodata
+         */
+        $student->update([
+            'firstname' => $data['firstname'],
+            'surname' => $data['surname'],
+            'gender' => $data['gender'],
+            'profile_picture' => $data['profile_picture'] ?? null,
+            'date_of_birth' => $data['date_of_birth'],
+            'location' => $data['location'],
+            'address' => $data['address'] ?? null,
+            'department' => $data['department'],
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Registration successful. Please verify your email or phone.',
+            'student' => $student->fresh(),
+        ], 201);
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'message' => 'Registration failed.',
+            'error' => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
+    }
+}
     /**
      * Summary of store
      **/
