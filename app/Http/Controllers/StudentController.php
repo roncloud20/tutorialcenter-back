@@ -37,10 +37,10 @@ class StudentController extends Controller
                 'string',
                 'min:8',
                 'same:confirmPassword',
-                'regex:/[a-z]/',
-                'regex:/[A-Z]/',
-                'regex:/[0-9]/',
-                'regex:/[@$!%*#?&]/',
+                // 'regex:/[a-z]/',
+                // 'regex:/[A-Z]/',
+                // 'regex:/[0-9]/',
+                // 'regex:/[@$!%*#?&]/',
             ],
             'confirmPassword' => 'required|string|min:8|same:password',
 
@@ -230,8 +230,8 @@ class StudentController extends Controller
             ->where('verifiable_id', $user->id)
             ->delete();
 
-        $token = Str::uuid();
-        // $token = rand(100000, 999999);
+        // $token = Str::uuid();
+        $token = rand(100000, 999999);
 
         EmailVerification::create([
             'verifiable_type' => get_class($user),

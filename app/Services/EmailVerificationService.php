@@ -20,7 +20,8 @@ class EmailVerificationService
             ->where('verifiable_id', $user->id)
             ->delete();
 
-        $token = Str::uuid();
+        // $token = Str::uuid();
+        $token = rand(100000, 999999);
 
         EmailVerification::create([
             'verifiable_type' => get_class($user),
