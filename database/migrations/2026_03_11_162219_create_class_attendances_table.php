@@ -23,6 +23,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->timestamp('joined_at')->nullable();
+            $table->timestamp('attendance_duration')->nullable();
             $table->timestamp('left_at')->nullable();
 
             $table->enum('status', [

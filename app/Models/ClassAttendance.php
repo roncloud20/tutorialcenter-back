@@ -15,12 +15,14 @@ class ClassAttendance extends Model
         'class_session_id',
         'student_id',
         'joined_at',
+        'attendance_duration',
         'left_at',
         'status'
     ];
 
     protected $casts = [
         'joined_at' => 'datetime',
+        'attendance_duration' => 'time',
         'left_at' => 'datetime'
     ];
 
