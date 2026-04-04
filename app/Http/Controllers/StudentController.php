@@ -711,6 +711,83 @@ class StudentController extends Controller
     }
 
     /**
+     * Update student profile information
+     * Allows authenticated students to update their profile (excluding email, tel and department)
+     **/
+    public function update(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            // 1. Validate input
+            $validator = Validator::make($request->all(), [
+                'firstname' => 'nullable|string|max:50',
+                'middlename' => 'nullable|string|max:50',
+                'surname' => 'nullable|string|max:50',
+                'gender' => 'nullable|string|in:male,female,others',
+                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'date_of_birth' => 'nullable|date|before:today',
+                'location' => 'nullable|string',
+                'address' => 'nullable|string',
+            ]);
+
+            if ($validator->fails()) {
+                DB::rollBack();
+                return response()->json([
+                    'errors' => $validator->errors(),
+                    'message' => 'Validation failed.',
+                ], 422);
+            }
+
+            // 2. Get authenticated student
+            $student = $request->user();
+
+            if (!$student) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Student not found.',
+                ], 404);
+            }
+
+            $data = $validator->validated();
+
+            // 3. Handle profile picture upload if provided
+            if ($request->hasFile('profile_picture')) {
+                $file = $request->file('profile_picture');
+                $path = $file->store('student_profile_pictures', 'public');
+                $data['profile_picture'] = $path;
+            }
+
+            // 4. Update student profile
+            $student->update([
+                'firstname' => $data['firstname'] ?? $student->firstname,
+                'middlename' => $data['middlename'] ?? $student->middlename,
+                'surname' => $data['surname'] ?? $student->surname,
+                'gender' => $data['gender'] ?? $student->gender,
+                'profile_picture' => $data['profile_picture'] ?? $student->profile_picture,
+                'date_of_birth' => $data['date_of_birth'] ?? $student->date_of_birth,
+                'location' => $data['location'] ?? $student->location,
+                'address' => $data['address'] ?? $student->address,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Profile updated successfully.',
+                'student' => $student->fresh(),
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to update profile.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
      * logout.
      **/
     public function logout(Request $request)

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\CourseController;
@@ -45,12 +46,14 @@ Route::prefix('students')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('students')->middleware(['auth:sanctum', 'auth:student'])->group(function () {
-    Route::get('/courses', [CourseController::class, 'getActiveCourses']); // Get Active Courses and Subject 
-    Route::get('/payments', [PaymentController::class, 'myPayments']); // Listing out all payments
-    Route::post('/courses/disenroll/{courseId}', [CourseController::class, 'disenrollCourse']); // Course disenrollment
-    Route::get('/calendar/schedule', [ClassesController::class, 'studentCalenderSchedule']); // Get student schedule (classes and sessions)
-    Route::get('/class/schedule', [ClassesController::class, 'studentClassSchedule']); // Get student schedule with attendance status
     Route::post('/logout', [StudentController::class, 'logout']); // Logout Method
+    Route::put('/profile/update', [StudentController::class, 'update']); // Update student profile
+    Route::get('/payments', [PaymentController::class, 'myPayments']); // Listing out all payments
+    Route::post('/attendance', [AttendanceController::class, 'store']); // Record attendance for a class session
+    Route::get('/courses', [CourseController::class, 'getActiveCourses']); // Get Active Courses and Subject 
+    Route::get('/class/schedule', [ClassesController::class, 'studentClassSchedule']); // Get student schedule with attendance status
+    Route::get('/calendar/schedule', [ClassesController::class, 'studentCalenderSchedule']); // Get student schedule (classes and sessions)
+    Route::post('/courses/disenroll/{courseId}', [CourseController::class, 'disenrollCourse']); // Course disenrollment
 });
 
 /*
