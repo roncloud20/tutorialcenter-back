@@ -29,15 +29,17 @@ Route::post('payments', [PaymentController::class, 'store']); // Public: Process
 |--------------------------------------------------------------------------
 */
 Route::prefix('students')->group(function () {
-    Route::post('/register', [StudentController::class, 'registerWithBiodata']); // Registration
-    // Route::post('/register', [StudentController::class, 'store']); // Registration
-    Route::post('/verify-email', [StudentController::class, 'verifyEmail']); // Email verification
-    Route::post('/resend-email-verification', [StudentController::class, 'resendEmailVerification']); // Resend Email Verification
-    Route::post('/verify-phone', [StudentController::class, 'verifyPhoneOtp']); // Phone OTP verification
-    Route::post('/resend-phone-otp', [StudentController::class, 'resendPhoneOtp']); // Resend Phone Verification
-    Route::post('/biodata', [StudentController::class, 'biodata']); // Biodata completion (NO AUTH REQUIRED, but verification enforced)
-    Route::post('/enroll-course', [CourseController::class, 'courseEnroll']); // Course enrollment
     Route::post('/login', [StudentController::class, 'login']); // Login Method
+    // Route::post('/register', [StudentController::class, 'store']); // Registration
+    // Route::post('/biodata', [StudentController::class, 'biodata']); // Biodata completion (NO AUTH REQUIRED, but verification enforced)
+    Route::post('/verify-email', [StudentController::class, 'verifyEmail']); // Email verification
+    Route::post('/enroll-course', [CourseController::class, 'courseEnroll']); // Course enrollment
+    Route::post('/verify-phone', [StudentController::class, 'verifyPhoneOtp']); // Phone OTP verification
+    Route::post('/register', [StudentController::class, 'registerWithBiodata']); // Registration
+    Route::post('/forget-password', [StudentController::class, 'forgetPassword']); // Forget Password
+    Route::post('/change-password', [StudentController::class, 'changePassword']); // Change Password with OTP
+    Route::post('/resend-phone-otp', [StudentController::class, 'resendPhoneOtp']); // Resend Phone Verification
+    Route::post('/resend-email-verification', [StudentController::class, 'resendEmailVerification']); // Resend Email Verification
 });
 
 /*

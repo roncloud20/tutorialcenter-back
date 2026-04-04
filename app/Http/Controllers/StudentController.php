@@ -798,4 +798,238 @@ class StudentController extends Controller
             'message' => 'Logged out successfully.',
         ]);
     }
+
+    /**
+     * Forget Password - Send OTP to email or phone
+     **/
+    public function forgetPassword(Request $request)
+    {
+        try {
+        $request->validate([
+            'email' => 'nullable|email|exists:students,email|required_without:tel',
+            'tel' => [
+                'nullable',
+                'string',
+                'exists:students,tel',
+                'required_without:email',
+                'regex:/^(\+234|234|0)(70|80|81|90|91)\d{8}$/',
+            ],
+        ]);
+
+        // Find student by email or phone
+        $student = null;
+        if ($request->email) {
+            $student = Student::where('email', $request->email)->first();
+        } elseif ($request->tel) {
+            $student = Student::where('tel', $request->tel)->first();
+        }
+
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found.',
+            ], 404);
+        }
+
+        DB::beginTransaction();
+        // try {
+
+            // Send OTP based on available contact method
+            if ($student->email) {
+                $this->sendPasswordResetEmail($student);
+            }
+
+            if ($student->tel) {
+                $this->sendPasswordResetOtp($student->tel);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Password reset OTP sent successfully.',
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to send password reset OTP.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Change Password using OTP
+     **/
+    public function changePassword(Request $request)
+    {
+        try {
+        $request->validate([
+            'email' => 'nullable|email|exists:students,email|required_without:tel',
+            'tel' => [
+                'nullable',
+                'string',
+                'exists:students,tel',
+                'required_without:email',
+                'regex:/^(\+234|234|0)(70|80|81|90|91)\d{8}$/',
+            ],
+            'otp' => 'required|string',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'same:confirmPassword',
+                // 'confirmed',
+                // 'regex:/[a-z]/',
+                // 'regex:/[A-Z]/',
+                // 'regex:/[0-9]/',
+                // 'regex:/[@$!%*#?&]/',
+            ],
+            'confirmPassword' => [
+                'required',
+                'string',
+                'min:8',
+                'same:password',
+                // 'confirmed',
+                // 'regex:/[a-z]/',
+                // 'regex:/[A-Z]/',
+                // 'regex:/[0-9]/',
+                // 'regex:/[@$!%*#?&]/',
+            ],
+        ]);
+
+        // Find student by email or phone
+        $student = null;
+        if ($request->email) {
+            $student = Student::where('email', $request->email)->first();
+        } elseif ($request->tel) {
+            $student = Student::where('tel', $request->tel)->first();
+        }
+
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found.',
+            ], 404);
+        }
+
+        // try {
+            DB::beginTransaction();
+
+            // Verify OTP based on contact method
+            if ($request->email) {
+                $record = EmailVerification::where('verifiable_type', Student::class)
+                    ->where('verifiable_id', $student->id)
+                    ->where('token', $request->otp)
+                    ->where('expires_at', '>', now())
+                    ->first();
+
+                if (!$record) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Invalid or expired OTP.',
+                    ], 400);
+                }
+
+                $record->delete();
+            } elseif ($request->tel) {
+                $otpRecord = DB::table('phone_otps')->where('tel', $student->tel)->latest()->first();
+
+                if (!$otpRecord) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'OTP not found.',
+                    ], 400);
+                }
+
+                if (Carbon::parse($otpRecord->expires_at)->isPast()) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'OTP expired.',
+                    ], 400);
+                }
+
+                if (!Hash::check($request->otp, $otpRecord->code)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Invalid OTP.',
+                    ], 400);
+                }
+
+                DB::table('phone_otps')->where('tel', $otpRecord->tel)->delete();
+            }
+
+            // Update password
+            $student->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Password changed successfully.',
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to change password.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Send password reset email
+     **/
+    protected function sendPasswordResetEmail(Student $student): void
+    {
+        // Remove existing password reset records for this user
+        EmailVerification::where('verifiable_type', Student::class)
+            ->where('verifiable_id', $student->id)
+            ->delete();
+
+        $token = rand(100000, 999999);
+
+        EmailVerification::create([
+            'verifiable_type' => Student::class,
+            'verifiable_id' => $student->id,
+            'token' => $token,
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
+        // Send password reset notification (you'll need to create this notification)
+        $student->notify(new \App\Notifications\StudentPasswordReset($token));
+    }
+
+    /**
+     * Send password reset OTP to phone
+     **/
+    protected function sendPasswordResetOtp(string $tel): void
+    {
+        // Delete any existing OTPs for this phone
+        DB::table('phone_otps')
+            ->where('tel', $tel)
+            ->delete();
+
+        $code = random_int(100000, 999999);
+        $message = "Your password reset code is {$code}. It expires in 10 minutes.";
+
+        // Simulate SMS sending (replace with actual SMS service)
+        $smsSent = true; // simulate success
+
+        if (!$smsSent) {
+            throw new \Exception('SMS sending failed');
+        }
+
+        DB::table('phone_otps')->insert([
+            'tel' => $tel,
+            'code' => Hash::make($code),
+            'expires_at' => Carbon::now()->addMinutes(10),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        logger()->info("Password reset OTP for {$tel} is {$code}");
+    }
 }
