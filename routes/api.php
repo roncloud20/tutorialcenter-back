@@ -56,8 +56,9 @@ Route::prefix('students')->middleware('auth:sanctum')->group(function () {
     Route::get('/class/schedule', [ClassesController::class, 'studentClassSchedule']); // Get student schedule with attendance status
     Route::get('/calendar/schedule', [ClassesController::class, 'studentCalenderSchedule']); // Get student schedule (classes and sessions)
     Route::post('/courses/disenroll/{courseId}', [CourseController::class, 'disenrollCourse']); // Course disenrollment
-    Route::post('/phone/change/request', [StudentController::class, 'requestPhoneNumberChange']); // Request phone number change with OTP
-    Route::post('/phone/change/resend-otp', [StudentController::class, 'resendPhoneChangeOtp']); // Resend OTP for phone number change
+    Route::post('/contact/change/request', [StudentController::class, 'requestContactChange']); // Request contact change (phone or email)
+    Route::post('/contact/change/confirm', [StudentController::class, 'confirmContactChange']); // Verify contact change with OTP
+    // Route::post('/phone/change/resend-otp', [StudentController::class, 'resendPhoneChangeOtp']); // Resend OTP for phone number change
 });
 
 Route::prefix('students')->group(function () {
