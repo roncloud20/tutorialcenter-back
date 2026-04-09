@@ -20,8 +20,8 @@ class StaffEmailVerificationNotification extends Notification
 
     public function toMail($notifiable)
     {
-        $verifyUrl = config('app.frontend_url') . '/verify-email?token=' . $this->token;
-        $phoneVerifyUrl = config('app.frontend_url') . '/verify-phone?telephone=' . urlencode($notifiable->telephone);
+        $verifyUrl = config('app.frontend_url') . '/verify-email?email=' . $notifiable->email . '&token=' . $this->token;
+        // $phoneVerifyUrl = config('app.frontend_url') . '/verify-phone?telephone=' . urlencode($notifiable->telephone);
 
         return (new MailMessage)
             ->subject('Verify Your Staff Account')
@@ -40,6 +40,8 @@ class StaffEmailVerificationNotification extends Notification
             ->action('Verify Email', $verifyUrl)
             ->line("Your temporary password is: " . $notifiable->staff_id)
             ->line('This verification link will expire in 30 minutes.')
+            ->line('Or use the OTP below:')
+            ->line($this->token)
             ->line('For any assistance, please contact support team or management.');
     }
 }
