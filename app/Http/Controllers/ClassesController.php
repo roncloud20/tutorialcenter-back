@@ -703,4 +703,68 @@ class ClassesController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update recording link for a class session (Admin, Advisor, or Staff)
+     */
+    public function updateSessionRecording(Request $request): JsonResponse{
+        try {
+            $validator = Validator::make($request->all(), [
+                'session_id' => 'required|exists:class_sessions,id',
+                'recording_link' => 'required|url',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $session = ClassSession::findOrFail($request->session_id);
+            $class = $session->class;
+
+            // Get authenticated staff
+            $staff = auth('staff')->user();
+
+            if (!$staff) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            // Check if staff is admin or assigned to the class
+            $isAdmin = $staff->role === 'admin';
+            $isAssigned = ClassStaff::where('class_id', $class->id)
+                ->where('staff_id', $staff->id)
+                ->exists();
+
+            if (!$isAdmin && !$isAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to update this session',
+                ], 403);
+            }
+
+            // Update the recording link
+            $session->update([
+                'recording_link' => $request->recording_link,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Recording link updated successfully',
+                'session' => $session,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update recording link',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }

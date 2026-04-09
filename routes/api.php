@@ -100,6 +100,9 @@ Route::prefix('staffs')->group(function () {
     Route::middleware('auth:staff')->group(function () {
         // Logout
         Route::post('/logout', [StaffController::class, 'logout']);
+
+        // Classes
+        Route::post('/classes/session/recording', [ClassesController::class, 'updateSessionRecording']); // Update recording link for a session
     });
 
 });

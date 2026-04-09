@@ -40,8 +40,7 @@ class StaffController extends Controller
     /**
      * Staff login.
      */
-    public function login(Request $request)
-    {
+    public function login(Request $request){
         try {
             // 1. Validate input
             $request->validate([
