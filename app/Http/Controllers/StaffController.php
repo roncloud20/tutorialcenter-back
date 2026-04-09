@@ -79,12 +79,12 @@ class StaffController extends Controller
                 ], 403);
             }
 
-            // 7. Phone verification check
-            if (!$staff->tel_verified_at) {
-                return response()->json([
-                    'message' => 'Please verify your phone number before logging in.'
-                ], 403);
-            }
+            // // 7. Phone verification check
+            // if (!$staff->tel_verified_at) {
+            //     return response()->json([
+            //         'message' => 'Please verify your phone number before logging in.'
+            //     ], 403);
+            // }
 
             // 8. Clear rate limiter after successful login
             RateLimiter::clear($throttleKey);
