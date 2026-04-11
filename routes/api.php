@@ -25,6 +25,15 @@ Route::post('payments', [PaymentController::class, 'store']); // Public: Process
 
 /*
 |--------------------------------------------------------------------------
+| Authenticated User Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->get('/notifications', function (Request $request) {
+    return $request->user()->notifications;
+});
+
+/*
+|--------------------------------------------------------------------------
 | Student Public Routes
 |--------------------------------------------------------------------------
 */

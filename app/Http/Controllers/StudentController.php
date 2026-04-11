@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use App\Services\EmailVerificationService;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Services\StudentNotificationService;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\StudentEmailVerification;
 use App\Notifications\ContactChangeOtpNotification;
@@ -698,6 +699,8 @@ class StudentController extends Controller
             // Create Sanctum token
             $token = $student->createToken('student-token')->plainTextToken;
 
+            StudentNotificationService::notify($student, 'login');
+
             return response()->json([
                 'message' => 'Login successful.',
                 'token' => $token,
@@ -1037,11 +1040,11 @@ class StudentController extends Controller
 
 
     /*
-    * Request contact change (email or phone)
+     * Request contact change (email or phone)
      * Requires authentication - uses current user to find the request
      * Validates input, checks for existing pending requests, generates OTP, sends notification, and stores request in DB
      *
-    */
+     */
     public function requestContactChange(Request $request)
     {
         try {

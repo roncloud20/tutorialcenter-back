@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Guardian;
-use Illuminate\Support\Str;
 use App\Models\EmailVerification;
 use Illuminate\Database\Eloquent\Model;
 use App\Notifications\StudentEmailVerification;
