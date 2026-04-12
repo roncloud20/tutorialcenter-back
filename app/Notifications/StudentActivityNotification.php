@@ -49,19 +49,18 @@ class StudentActivityNotification extends Notification
     // Build a user-friendly message based on the activity type
     protected function buildMessage()
     {
+        $contact = $this->student->email ?: $this->student->tel;
+        $identity = trim($this->student->firstname . ' ' . $this->student->surname);
+        $contactSuffix = $contact ? " ({$contact})" : '';
+
         return match ($this->type) {
-
-            'login' => "{$this->student->firstname} just logged in",
-
-            'attendance' => "{$this->student->firstname} attended a class",
-
-            'assignment_submitted' => "{$this->student->firstname} submitted an assignment",
-
-            'payment_successful' => "{$this->student->firstname} made a payment",
-
-            'schedule_update' => "Class schedule updated for {$this->student->firstname}",
-
-            default => "New activity from {$this->student->firstname}",
+            'login' => "{$identity}{$contactSuffix} just logged in",
+            'logout' => "{$identity}{$contactSuffix} just logged out",
+            'attendance' => "{$identity}{$contactSuffix} attended a class",
+            'assignment_submitted' => "{$identity}{$contactSuffix} submitted an assignment",
+            'payment_successful' => "{$identity}{$contactSuffix} made a payment",
+            'schedule_update' => "Class schedule updated for {$identity}{$contactSuffix}",
+            default => "New activity from {$identity}{$contactSuffix}",
         };
     }
 
