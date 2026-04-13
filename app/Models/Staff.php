@@ -46,10 +46,13 @@ class Staff extends Model
     }
 
     public function advisees()
-{
-    return $this->belongsToMany(Student::class, 'student_advisors')
-        ->withPivot(['role', 'assigned_at'])
-        ->withTimestamps();
-}
-
+    {
+        return $this->belongsToMany(Student::class, 'student_advisors')
+            ->withPivot(['role', 'assigned_at'])
+            ->withTimestamps();
+    }
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', 'admin');
+    }
 }

@@ -24,9 +24,9 @@ class StaffSeeder extends Seeder
                 'users' => [
                     [
                         'staff_id'  => 'TC' . now()->format('ym') . '0001',
-                        'firstname' => 'John',
-                        'surname'   => 'Doe',
-                        'email'     => 'admin1@tutorialcenter.com',
+                        'firstname' => 'Olugbenga',
+                        'surname'   => 'Raymond',
+                        'email'     => 'tutorialcenter001@gmail.com',
                         'tel'       => '08030000001',
                         'gender'    => 'male',
                     ],
