@@ -401,10 +401,6 @@ class StudentController extends Controller
                 'string',
                 'min:8',
                 'same:confirmPassword',
-                // 'regex:/[a-z]/',
-                // 'regex:/[A-Z]/',
-                // 'regex:/[0-9]/',
-                // 'regex:/[@$!%*#?&]/',
             ],
             'confirmPassword' => 'required|string|min:8|same:password',
 
@@ -913,92 +909,6 @@ class StudentController extends Controller
 
     
 
-
-
-
-    // /**
-    //  * Summary of store
-    //  **/
-    // public function store(Request $request)
-    // {
-    //     // 1. Validate input
-    //     $validator = Validator::make($request->all(), [
-    //         'email' => 'nullable|email|unique:students,email|required_without:tel',
-    //         'tel' => [
-    //             'nullable',
-    //             'string',
-    //             'unique:students,tel',
-    //             'required_without:email',
-    //             'regex:/^(\+234|234|0)(70|80|81|90|91)\d{8}$/',
-    //         ],
-    //         'password' => [
-    //             'required',
-    //             'string',
-    //             'min:8',
-    //             'same:confirmPassword',
-    //             'regex:/[a-z]/',
-    //             'regex:/[A-Z]/',
-    //             'regex:/[0-9]/',
-    //             'regex:/[@$!%*#?&]/',
-    //         ],
-    //         'confirmPassword' => [
-    //             'required',
-    //             'string',
-    //             'min:8',
-    //             'same:password',
-    //             'regex:/[a-z]/',
-    //             'regex:/[A-Z]/',
-    //             'regex:/[0-9]/',
-    //             'regex:/[@$!%*#?&]/',
-    //         ],
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'errors' => $validator->errors(),
-    //             'message' => 'Registration failed.',
-    //         ], 422);
-    //     }
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         // 2. Create student (NOT committed yet)
-    //         $student = Student::create([
-    //             'email' => $request->email,
-    //             'tel' => $request->tel,
-    //             'password' => Hash::make($request->password),
-    //         ]);
-
-    //         // 3. Verification logic (must succeed)
-    //         if ($student->email) {
-    //             // $this->sendEmailVerification($student); // must throw on failure
-    //             app(EmailVerificationService::class)->send($student);
-    //         }
-
-    //         if ($student->tel) {
-    //             $this->sendPhoneOtp($student->tel); // must throw on failure
-    //         }
-
-    //         // 4. All good → commit
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'message' => 'Registration successful. Verification required.',
-    //             'student' => $student,
-    //         ], 201);
-
-    //     } catch (\Throwable $e) {
-    //         // 5. Something failed → rollback
-    //         DB::rollBack();
-
-    //         return response()->json([
-    //             'message' => 'Registration failed. Verification could not be sent.',
-    //             'errors' => config('app.debug') ? $e->getMessage() : null,
-    //             // 'errors' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
 
     /**
      * Summary of sendEmailVerification

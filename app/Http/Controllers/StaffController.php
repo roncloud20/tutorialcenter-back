@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AdminNotificationService;
 use Carbon\Carbon;
 use App\Models\Staff;
 use Illuminate\Support\Str;
@@ -200,6 +201,12 @@ class StaffController extends Controller
             $this->sendPhoneOtp($staff->tel);
 
             DB::commit();
+
+            AdminNotificationService::notify(
+                'staff_registration',
+                "New staff registered: {$staff->firstname} {$staff->surname} ({$staff->staff_id})",
+                ['staff_id' => $staff->id]
+            );
 
             return response()->json([
                 'message' => 'Staff registered successfully. Verification required.',
