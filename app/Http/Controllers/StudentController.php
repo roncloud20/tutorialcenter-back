@@ -1450,4 +1450,48 @@ class StudentController extends Controller
             ], 500);
         }
     }
+
+
+        /*
+     * (Admin) Delete staff using soft delete
+     */
+    public function destroy($id)
+    {
+        try {
+            $student = Student::findOrFail($id);
+
+            $student->delete();
+
+            return response()->json([
+                'message' => 'Student suspended successfully.',
+                'student' => $student,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to suspend student.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /*
+     * (Admin) Restore staff using soft delete
+     */
+    public function restore($id)
+    {
+        try {
+            $student = Student::withTrashed()->findOrFail($id);
+            $student->restore();
+
+            return response()->json([
+                'message' => 'Student restored successfully.',
+                'student' => $student,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to restore student.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }

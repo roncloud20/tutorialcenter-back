@@ -175,8 +175,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
 
     // Student Management
     Route::prefix('students')->group(function () {
+        Route::post('/restore/{id}', [StudentController::class, 'restore']); // Restore a soft-deleted student
+        Route::delete('/destroy/{id}', [StudentController::class, 'destroy']); // Soft delete a student
         Route::get('/all', [StudentController::class, 'index']); // List all students
-        Route::get('/{id}', [StudentController::class, 'show']); //
+        Route::get('/{id}', [StudentController::class, 'show']); // Show student details
     });
 
     
