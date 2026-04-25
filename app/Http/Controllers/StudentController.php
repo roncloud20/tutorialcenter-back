@@ -107,7 +107,8 @@ class StudentController extends Controller
     /**
      * logout.
      **/
-    public function logout(Request $request){
+    public function logout(Request $request)
+    {
         $request->user()->tokens()->delete();
         StudentNotificationService::notify($request->user(), 'logout');
 
@@ -289,7 +290,6 @@ class StudentController extends Controller
         }
     }
 
-
     /**
      * Update student profile information
      * Allows authenticated students to update their profile (excluding email, tel and department)
@@ -380,7 +380,6 @@ class StudentController extends Controller
             ], 500);
         }
     }
-
 
     // Version 1: Basic registration with separate biodata completion
     public function registerWithBiodata(Request $request)
@@ -496,7 +495,7 @@ class StudentController extends Controller
         }
     }
 
-        /*
+    /*
      * Request contact change (email or phone)
      * Requires authentication - uses current user to find the request
      * Validates input, checks for existing pending requests, generates OTP, sends notification, and stores request in DB
@@ -826,15 +825,15 @@ class StudentController extends Controller
 
                 DB::commit();
                 StudentNotificationService::notify(
-                $request->user(),
-                'confirm contact change',
-                [
-                    'change type' => $$request->type,
-                    'old value' => $oldValue,
-                    'new value' => $changeRequest->new_value,
-                    'changed at' => now()->toDateTimeString(),
-                ]
-            );
+                    $request->user(),
+                    'confirm contact change',
+                    [
+                        'change type' => $$request->type,
+                        'old value' => $oldValue,
+                        'new value' => $changeRequest->new_value,
+                        'changed at' => now()->toDateTimeString(),
+                    ]
+                );
 
                 return response()->json([
                     'message' => ucfirst($request->type) . ' updated successfully.',
@@ -857,34 +856,6 @@ class StudentController extends Controller
         }
     }
 
-    /*
-    * Fetch all students (for admin use)
-    */
-    public function index()
-    {
-        $students = Student::withTrashed()->get();
-        return response()->json([
-            'message' => 'Students retrieved successfully.',
-            'students' => $students,
-        ], 200);
-    }
-
-     /*
-     * Fetch single student by ID (for admin use)
-     */
-    public function show($id)
-    {
-        $student = Student::withTrashed()->find($id);
-        if (!$student) {
-            return response()->json([
-                'message' => 'Student not found.',
-            ], 404);
-        }
-        return response()->json([
-            'message' => 'Student retrieved successfully.',
-            'student' => $student,
-        ], 200);
-    }
 
 
 
@@ -907,7 +878,7 @@ class StudentController extends Controller
 
 
 
-    
+
 
 
     /**
@@ -1452,7 +1423,7 @@ class StudentController extends Controller
     }
 
 
-        /*
+    /*
      * (Admin) Delete staff using soft delete
      */
     public function destroy($id)
@@ -1493,5 +1464,52 @@ class StudentController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+
+        /*
+     * Fetch all students (for admin use)
+     */
+    public function index()
+    {
+        $students = Student::withTrashed()->get();
+        return response()->json([
+            'message' => 'Students retrieved successfully.',
+            'students' => $students,
+        ], 200);
+    }
+
+
+    /*
+     * Fetch single student by ID (for admin use)
+     */
+    public function show($id)
+    {
+        $student = Student::withTrashed()
+            ->with([
+                'guardians',
+                'courseEnrollments',
+                'advisors',
+                'attendances',
+            ])
+            ->find($id);
+
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Student retrieved successfully.',
+            'student' => [
+                'information' => $student,
+
+                'guardians' => $student->guardians,
+                'courses' => $student->courseEnrollments,
+                'advisors' => $student->advisors,
+                'attendance' => $student->attendances,
+            ],
+        ], 200);
     }
 }
