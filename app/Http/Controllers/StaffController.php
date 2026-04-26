@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\StaffActivityNotification;
 use App\Services\AdminNotificationService;
 use Carbon\Carbon;
 use App\Models\Staff;
@@ -18,27 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class StaffController extends Controller
 {
-
-    /**
-     * Get all staff (Admin only - enforced in controller)
-     */
-    public function index()
-    {
-        try {
-            $staffs = Staff::withTrashed()->get();
-            return response()->json([
-                'message' => 'Staff retrieved successfully.',
-                'staffs' => $staffs,
-            ], 200);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve staff.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
-        }
-    }
-
-    /**
+     /**
      * Staff login.
      */
     public function login(Request $request){
@@ -96,6 +77,11 @@ class StaffController extends Controller
             // 10. Create new token
             $token = $staff->createToken('staff-token')->plainTextToken;
 
+            $staff->notify(new StaffActivityNotification(
+                $staff->id,
+                "{$staff->role} {$staff->firstname} {$staff->surname} logged in."
+            ));
+
             return response()->json([
                 'message' => 'Login successful.',
                 'token' => $token,
@@ -106,6 +92,35 @@ class StaffController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Login failed.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Get all staff (Admin only - enforced in controller)
+     */
+    public function index()
+    {
+        try {
+            $staffs = Staff::withTrashed()->get();
+            return response()->json([
+                'message' => 'Staff retrieved successfully.',
+                'staffs' => $staffs,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to retrieve staff.',
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
@@ -448,9 +463,13 @@ class StaffController extends Controller
     /**
      * Staff logout.
      */
-    public function logout(Request $request)
-    {
+    public function logout(Request $request){
         $request->user()->tokens()->delete();
+        $staff = $request->user();
+        $staff->notify(new StaffActivityNotification(
+                $staff->id,
+                "{$staff->role} {$staff->firstname} {$staff->surname} logged out."
+            ));
 
         return response()->json([
             'message' => 'Logged out successfully.',
