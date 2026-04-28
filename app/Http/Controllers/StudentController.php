@@ -24,7 +24,8 @@ class StudentController extends Controller
     /**
      * Login
      **/
-    public function login(Request $request){
+    public function login(Request $request)
+    {
         // 1️⃣ Validate input
         $validator = Validator::make($request->all(), [
             'entry' => 'required|string',
@@ -1338,7 +1339,7 @@ class StudentController extends Controller
     }
 
 
-        /*
+    /*
      * Fetch all students (for admin use)
      */
     public function index()
@@ -1355,44 +1356,44 @@ class StudentController extends Controller
      * Fetch single student by ID (for admin use)
      */
     public function show($id)
-{
-    $student = Student::withTrashed()
-        ->with([
-            'guardians',
-            'courseEnrollments.course',
-            'advisors',
-            'attendances',
-        ])
-        ->find($id);
+    {
+        $student = Student::withTrashed()
+            ->with([
+                'guardians',
+                'courseEnrollments.course',
+                'advisors',
+                'attendances',
+            ])
+            ->find($id);
 
-    if (!$student) {
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found.',
+            ], 404);
+        }
+
         return response()->json([
-            'message' => 'Student not found.',
-        ], 404);
+            'message' => 'Student retrieved successfully.',
+            'student' => [
+                'information' => $student,
+
+                'guardians' => $student->guardians,
+
+                'courses' => $student->courseEnrollments->map(function ($enrollment) {
+                    return [
+                        'enrollment_id' => $enrollment->id,
+                        'student_id' => $enrollment->student_id,
+                        'course_id' => $enrollment->course_id,
+                        'enrollment_status' => $enrollment->status ?? null,
+                        'enrolled_at' => $enrollment->created_at,
+
+                        'course_information' => $enrollment->course,
+                    ];
+                }),
+
+                'advisors' => $student->advisors,
+                'attendance' => $student->attendances,
+            ],
+        ], 200);
     }
-
-    return response()->json([
-        'message' => 'Student retrieved successfully.',
-        'student' => [
-            'information' => $student,
-
-            'guardians' => $student->guardians,
-
-            'courses' => $student->courseEnrollments->map(function ($enrollment) {
-                return [
-                    'enrollment_id' => $enrollment->id,
-                    'student_id' => $enrollment->student_id,
-                    'course_id' => $enrollment->course_id,
-                    'enrollment_status' => $enrollment->status ?? null,
-                    'enrolled_at' => $enrollment->created_at,
-
-                    'course_information' => $enrollment->course,
-                ];
-            }),
-
-            'advisors' => $student->advisors,
-            'attendance' => $student->attendances,
-        ],
-    ], 200);
-}
 }
