@@ -7,6 +7,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\ClassesController;
+use App\Http\Controllers\ExamBodyController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\NotificationController;
@@ -180,6 +181,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
         Route::get('/all', [StudentController::class, 'index']); // List all students
         Route::get('/{id}', [StudentController::class, 'show']); // Show student details
     });
+
+    // Exam Body Management
+    Route::apiResource('exam-bodies', ExamBodyController::class);
 
     
     // Notification Routes

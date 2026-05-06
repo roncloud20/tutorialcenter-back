@@ -24,13 +24,12 @@ return new class extends Migration
              * courses: [1, 2, 5]
              * assignees: [3, 7]
              */
-            $table->json('courses')->comment('Array of course IDs this subject belongs to');
+            // $table->json('courses')->comment('Array of course IDs this subject belongs to');
 
             $table->json('departments')
                 ->comment('Array of department identifiers');
 
-            $table->json('assignees')
-                ->comment('Array of staff IDs assigned to this subject');
+            // $table->json('assignees')->comment('Array of staff IDs assigned to this subject');
 
             $table->enum('status', ['active', 'inactive'])
                 ->default('inactive');

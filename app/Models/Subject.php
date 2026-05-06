@@ -18,7 +18,6 @@ class Subject extends Model
     ];
 
     protected $casts = [
-        'courses' => 'array',
         'departments' => 'array',
         'assignees' => 'array',
     ];
