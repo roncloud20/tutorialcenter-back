@@ -330,7 +330,10 @@ class SubjectController extends Controller
     {
         try {
             $subjects = Subject::where('status', 'active')
-                ->whereJsonContains('courses', $courseId)
+                ->whereHas('courses', function ($query) use ($courseId) {
+                    $query->where('courses.id', $courseId);
+                })
+                ->with('courses')
                 ->get();
 
             return response()->json([
@@ -344,18 +347,40 @@ class SubjectController extends Controller
             ], 500);
         }
     }
+    // public function subjectsByCourse(int $courseId)
+    // {
+    //     try {
+    //         $subjects = Subject::where('status', 'active')
+    //             ->whereJsonContains('courses', $courseId)
+    //             ->get();
+
+    //         return response()->json([
+    //             'message' => 'Subjects fetched successfully.',
+    //             'subjects' => $subjects,
+    //         ], 200);
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'message' => 'Failed to retrieve subjects.',
+    //             'error' => config('app.debug') ? $e->getMessage() : null,
+    //         ], 500);
+    //     }
+    // }
 
 
     /*
      * Public Method: List subjects by course and department
      */
+
     public function subjectsByCourseAndDepartment(int $courseId, string $department)
     {
         try {
             $subjects = Subject::query()
                 ->where('status', 'active')
-                ->whereJsonContains('courses', $courseId)
+                ->whereHas('courses', function ($query) use ($courseId) {
+                    $query->where('courses.id', $courseId);
+                })
                 ->whereJsonContains('departments', $department)
+                ->with('courses')
                 ->get();
 
             return response()->json([
@@ -369,6 +394,26 @@ class SubjectController extends Controller
             ], 500);
         }
     }
+    // public function subjectsByCourseAndDepartment(int $courseId, string $department)
+    // {
+    //     try {
+    //         $subjects = Subject::query()
+    //             ->where('status', 'active')
+    //             ->whereJsonContains('courses', $courseId)
+    //             ->whereJsonContains('departments', $department)
+    //             ->get();
+
+    //         return response()->json([
+    //             'message' => 'Subjects fetched successfully.',
+    //             'subjects' => $subjects,
+    //         ], 200);
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'message' => 'Failed to retrieve subjects.',
+    //             'error' => config('app.debug') ? $e->getMessage() : null,
+    //         ], 500);
+    //     }
+    // }
 
     /*
      * Public Method: Subject enrollment

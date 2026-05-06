@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExamBody;
+use Illuminate\Support\Facades\Validator;;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -13,26 +15,32 @@ class ExamBodyController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ExamBody::query();
+        try {
+            $query = ExamBody::query();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
+            if ($request->filled('search')) {
+                $search = $request->search;
 
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%");
-            });
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $examBodies = $query
+                ->latest()
+                ->paginate(20);
+
+            return response()->json($examBodies);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized to view exam bodies.',
+            ], 403);
         }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $examBodies = $query
-            ->latest()
-            ->paginate(20);
-
-        return response()->json($examBodies);
     }
 
     /**
@@ -40,21 +48,33 @@ class ExamBodyController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255', 'unique:exam_bodies,name'],
             'status' => ['nullable', 'in:active,inactive'],
         ]);
 
-        $examBody = ExamBody::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'status' => $validated['status'] ?? 'active',
-        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $examBody = ExamBody::create([
+                'name' => $request->name,
+                'slug' => Str::slug($request->name),
+                'status' => $request->status ?? 'active',
+            ]);
 
-        return response()->json([
-            'message' => 'Exam body created successfully.',
-            'data' => $examBody,
-        ], 201);
+            return response()->json([
+                'message' => 'Exam body created successfully.',
+                'data' => $examBody,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized to create exam body.',
+            ], 403);
+        }
     }
 
     /**
@@ -62,7 +82,13 @@ class ExamBodyController extends Controller
      */
     public function show(ExamBody $examBody)
     {
-        return response()->json($examBody);
+        try {
+            $examBody->load('exams'); // Load related exams if needed
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized to view exam body.',
+            ], 403);
+        }
     }
 
     /**
@@ -70,7 +96,7 @@ class ExamBodyController extends Controller
      */
     public function update(Request $request, ExamBody $examBody)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => [
                 'required',
                 'string',
@@ -80,16 +106,28 @@ class ExamBodyController extends Controller
             'status' => ['nullable', 'in:active,inactive'],
         ]);
 
-        $examBody->update([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'status' => $validated['status'] ?? $examBody->status,
-        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        try {
+            $examBody->update([
+                'name' => $request->name,
+                'slug' => Str::slug($request->name),
+                'status' => $request->status ?? $examBody->status,
+            ]);
 
-        return response()->json([
-            'message' => 'Exam body updated successfully.',
-            'data' => $examBody,
-        ]);
+            return response()->json([
+                'message' => 'Exam body updated successfully.',
+                'data' => $examBody,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized to update exam body.',
+            ], 403);
+        }
     }
 
     /**
@@ -97,10 +135,16 @@ class ExamBodyController extends Controller
      */
     public function destroy(ExamBody $examBody)
     {
-        $examBody->delete();
+        try {
+            $examBody->delete();
 
-        return response()->json([
-            'message' => 'Exam body deleted successfully.',
-        ]);
+            return response()->json([
+                'message' => 'Exam body deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized to delete exam body.',
+            ], 403);
+        }
     }
 }

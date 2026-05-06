@@ -183,7 +183,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
     });
 
     // Exam Body Management
-    Route::apiResource('exam-bodies', ExamBodyController::class);
+    Route::prefix('exam-bodies')->group(function () {
+        Route::get('/all', [ExamBodyController::class, 'index']); // List all exam bodies (including inactive)
+        Route::post('/', [ExamBodyController::class, 'store']); // Create new exam body
+        Route::get('/{id}', [ExamBodyController::class, 'show']); // Show exam body details
+        Route::put('/update/{id}', [ExamBodyController::class, 'update']); // Update exam body
+        Route::delete('/destroy/{id}', [ExamBodyController::class, 'destroy']); // Soft delete exam body
+    });
 
     
     // Notification Routes
