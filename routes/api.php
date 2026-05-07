@@ -1,16 +1,16 @@
 <?php
 
-use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\ClassesController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ExamBodyController;
 use App\Http\Controllers\ExamYearController;
-use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuardianController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\NotificationController;
 
 /*
