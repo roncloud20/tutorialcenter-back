@@ -30,9 +30,13 @@ class ExamYear extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    // Later
-    // public function pastQuestions()
-    // {
-    //     return $this->hasMany(PastQuestion::class);
-    // }
+    public function pastQuestions()
+    {
+        return $this->hasMany(PastQuestion::class);
+    }
+
+    public function groups()
+    {
+        return $this->hasMany(PastQuestionGroup::class);
+    }
 }

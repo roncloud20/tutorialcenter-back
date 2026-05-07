@@ -56,13 +56,13 @@ class ExamBody extends Model
         return $this->hasMany(ExamYear::class);
     }
 
+    public function pastQuestions()
+    {
+        return $this->hasMany(PastQuestion::class);
+    }
+
     // public function exams()
     // {
     //     return $this->hasMany(Exam::class);
-    // }
-
-    // public function pastQuestions()
-    // {
-    //     return $this->hasMany(PastQuestion::class);
     // }
 }
