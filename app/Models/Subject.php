@@ -44,4 +44,9 @@ class Subject extends Model
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    public function examYears()
+    {
+        return $this->hasMany(ExamYear::class);
+    }
 }

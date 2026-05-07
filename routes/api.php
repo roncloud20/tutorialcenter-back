@@ -8,6 +8,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\ClassesController;
 use App\Http\Controllers\ExamBodyController;
+use App\Http\Controllers\ExamYearController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\NotificationController;
@@ -191,7 +192,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
         Route::delete('/destroy/{id}', [ExamBodyController::class, 'destroy']); // Soft delete exam body
     });
 
-    
+    // Exam Year Management
+    Route::prefix('exam-years')->group(function () {
+        Route::get('/all', [ExamYearController::class, 'index']); // List all exam years (including inactive)
+        Route::post('/', [ExamYearController::class, 'store']); // Create new exam year
+        Route::get('/{id}', [ExamYearController::class, 'show']); // Show exam year details
+        Route::put('/update/{id}', [ExamYearController::class, 'update']); // Update exam year
+        Route::delete('/destroy/{id}', [ExamYearController::class, 'destroy']); // Soft delete exam year
+    });
+
     // Notification Routes
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
