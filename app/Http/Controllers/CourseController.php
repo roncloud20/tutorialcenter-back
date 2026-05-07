@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\CoursesEnrollment;
 use App\Models\Subject;
 use App\Models\SubjectsEnrollment;
+use App\Services\AdminNotificationService;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +59,12 @@ class CourseController extends Controller
             ]);
 
             DB::commit();
+
+            AdminNotificationService::notify(
+                'course_created',
+                "New course created: {$course->title} by user: {$request->user()->staff_id}, {$request->user()->firstname} {$request->user()->surname}, {$request->user()->email}",
+                ['course_id' => $course->id]
+            );
 
             return response()->json([
                 'success' => true,
