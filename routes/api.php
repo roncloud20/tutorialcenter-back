@@ -231,6 +231,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'auth:staff', 'staff.role:ad
         Route::delete('/destroy/{id}', [PastQuestionOptionController::class, 'destroy']); // Soft delete past question option
     });
 
+    // Payment Management
+    Route::prefix('payments')->group(function () {
+        Route::get('/all', [PaymentController::class, 'index']); // List all payments with filters
+    });
+
     // Notification Routes
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);

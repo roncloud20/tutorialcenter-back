@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CoursesEnrollment;
 use App\Models\Payment;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -44,7 +45,7 @@ class PaymentController extends Controller
 
     // Student: View my payments
     public function myPayments(Request $request)
-    {        
+    {
         try {
             $studentId = $request->user()->id;
             $payments = Payment::with(['enrollment' => function ($query) {
@@ -58,6 +59,50 @@ class PaymentController extends Controller
             });
             return response()->json([
                 'payments' => $paymentsData,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to retrieve payments.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Admin: View all payments with filters
+    public function index(Request $request)
+    {
+        try {
+            $query = Payment::with(['student', 'enrollment.course']);
+
+            if ($request->filled('student_id')) {
+                $query->where('student_id', $request->student_id);
+            }
+
+            if ($request->filled('course_id')) {
+                $query->whereHas('enrollment', function ($q) use ($request) {
+                    $q->where('course_id', $request->course_id);
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('payment_method')) {
+                $query->where('payment_method', $request->payment_method);
+            }
+
+            if ($request->filled('from_date')) {
+                $query->whereDate('created_at', '>=', $request->from_date);
+            }
+
+            if ($request->filled('to_date')) {
+                $query->whereDate('created_at', '<=', $request->to_date);
+            }
+
+            $payments = $query->latest()->paginate(20);
+            return response()->json([
+                'payments' => $payments,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

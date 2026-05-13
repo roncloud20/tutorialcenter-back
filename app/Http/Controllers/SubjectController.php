@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use App\Models\SubjectsEnrollment;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -107,7 +108,7 @@ class SubjectController extends Controller
             }
 
             DB::commit();
-
+            AdminNotificationService::notify("New Subject Created: {$subject->name}", "A new subject has been created with ID: {$subject->id}. for departments: " . implode(', ', $subject->departments) . "under courses: " . implode(', ', $subject->courses()->pluck('name')->toArray()));
             return response()->json([
                 'message' => 'Subject created successfully.',
                 'subject' => $subject->load('courses'),
